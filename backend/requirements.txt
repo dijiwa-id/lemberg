@@ -1,0 +1,13 @@
+fastapi>=0.110.0
+uvicorn>=0.29.0
+sqlalchemy>=2.0.0
+pydantic>=2.7.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+# Pin bcrypt below 4.1 so passlib 1.7.x's startup probe (which calls
+# `bcrypt.__about__.__version__` and hashes a 73-byte sentinel) keeps
+# working. bcrypt 4.1+ removed `__about__` and enforces a 72-byte cap,
+# both of which trip passlib's bcrypt backend init.
+bcrypt>=3.2.0,<4.1.0
+python-multipart>=0.0.9
+aiofiles>=23.2.1

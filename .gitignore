@@ -1,0 +1,40 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+venv-win/
+.venv/
+env/
+
+# Backend runtime state — must not be committed
+backend/cms.db
+backend/cms.db-journal
+backend/cms.db-wal
+backend/cms.db-shm
+backend/uploads/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+desktop.ini
