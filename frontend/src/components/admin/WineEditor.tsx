@@ -258,16 +258,6 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
               />
             </div>
           </div>
-
-          <div className="md:col-span-2 border-t border-[var(--color-ink-700)] pt-5">
-            <ImageField
-              label="Legacy single image (fallback)"
-              hint="Used only when the gallery above is empty. Once you have a gallery, this becomes a backup."
-              value={wine.image || ""}
-              onChange={(v) => persist({ image: v })}
-              aspect="aspect-[4/5]"
-            />
-          </div>
         </div>
       )}
     </div>

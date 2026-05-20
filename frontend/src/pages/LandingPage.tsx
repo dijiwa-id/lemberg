@@ -46,9 +46,10 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   // Initial state pulls from the persistent cache when available so a refresh
   // doesn't briefly render the Unsplash defaults baked into FALLBACK_*.
   // Preview mode (Studio) always wins — it passes live editor state.
-  const [config, setConfig] = useState<SiteConfig>(
-    () => previewConfig || readCachedConfig() || FALLBACK_CONFIG
-  );
+  const [config, setConfig] = useState<SiteConfig>(() => {
+    if (previewConfig) return mergeRemoteConfig(previewConfig);
+    return readCachedConfig() || FALLBACK_CONFIG;
+  });
   const [wines, setWines] = useState<Wine[]>(
     () => previewWines || readCachedWines() || FALLBACK_WINES
   );
@@ -59,6 +60,7 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   const location = useLocation();
 
   // Live preview sync (Admin)
+  // Preview mode overrides
   useEffect(() => {
     if (previewConfig) setConfig(mergeRemoteConfig(previewConfig));
   }, [previewConfig]);

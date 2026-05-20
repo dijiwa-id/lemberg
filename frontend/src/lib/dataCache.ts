@@ -27,7 +27,7 @@
 
 import type { MenuItemNode, SiteConfig, Wine } from "./types";
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 const KEYS = {
   config: "lemberg_config_cache",

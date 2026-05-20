@@ -3,9 +3,9 @@
 This avoids forcing developers to nuke cms.db when models grow.
 """
 
+import json
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
-
 
 WINE_COLUMNS = {
     "slug":         "VARCHAR",
@@ -42,8 +42,42 @@ def _ensure_columns(engine: Engine, table: str, cols: dict[str, str]) -> None:
                 conn.execute(text(f'ALTER TABLE {table} ADD COLUMN "{col}" {ddl}'))
 
 
+def _migrate_obsolete_data(engine: Engine) -> None:
+    """Strategic migration: moves data from deprecated columns to modern ones."""
+    inspector = inspect(engine)
+    if "wines" not in inspector.get_table_names():
+        return
+    
+    with engine.begin() as conn:
+        wines = conn.execute(text("SELECT id, alcohol, category, image, images FROM wines")).fetchall()
+        for w in wines:
+            # 1. Migrate deprecated 'alcohol' to 'category' if category is empty
+            update_sql = []
+            params = {"id": w.id}
+            
+            if w.alcohol and not w.category:
+                update_sql.append("category = :alcohol")
+                params["alcohol"] = w.alcohol
+                
+            # 2. Migrate legacy 'image' into 'images' JSON array if images is empty
+            if w.image and (not w.images or w.images == "[]" or w.images == "null"):
+                try:
+                    current_images = json.loads(w.images) if w.images else []
+                except:
+                    current_images = []
+                    
+                if not current_images:
+                    update_sql.append("images = :images")
+                    params["images"] = json.dumps([w.image])
+            
+            if update_sql:
+                set_clause = ", ".join(update_sql)
+                conn.execute(text(f"UPDATE wines SET {set_clause} WHERE id = :id"), params)
+
+
 def add_missing_columns(engine: Engine) -> None:
     """Idempotent — safe to call on every boot. Adds any model columns
     that aren't present on the live SQLite file yet."""
     _ensure_columns(engine, "wines", WINE_COLUMNS)
     _ensure_columns(engine, "reservations", RESERVATION_COLUMNS)
+    _migrate_obsolete_data(engine)
