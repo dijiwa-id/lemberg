@@ -65,8 +65,10 @@ export function FeaturedWine({ config, wine, onOpenWine }: FeaturedWineProps) {
               <p className="mt-2 text-sm text-[var(--color-bone-200)]">{wine?.vintage || "—"}</p>
             </div>
             <div>
-              <span className="label-eyebrow text-[var(--color-bone-500)]">Alcohol</span>
-              <p className="mt-2 text-sm text-[var(--color-bone-200)]">{wine?.alcohol || "—"}</p>
+              <span className="label-eyebrow text-[var(--color-bone-500)]">Category</span>
+              <p className="mt-2 text-sm text-[var(--color-bone-200)]">
+                {wine?.category || wine?.alcohol || "—"}
+              </p>
             </div>
           </div>
 

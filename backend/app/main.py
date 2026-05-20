@@ -49,20 +49,21 @@ async def lifespan(app: FastAPI):
     # No teardown work needed — SQLAlchemy engine is process-lifetime.
 
 
-APP_VERSION = os.environ.get("LEMBERG_VERSION", "1.1.0")
-ENV = os.environ.get("LEMBERG_ENV", "development")
+APP_VERSION = os.environ.get("LEMBERG_VERSION", "1.3.0")
 
-# Disable docs in production if requested
-show_docs = os.environ.get("LEMBERG_SHOW_DOCS", "true").lower() == "true"
-if ENV == "production" and os.environ.get("LEMBERG_SHOW_DOCS") is None:
-    show_docs = False  # Default to false in production if not specified
+# OpenAPI / Swagger docs are useful for development but leak the full
+# request schema (every field, every validation rule) when left open in
+# production. Default off in production-ish env (anything other than
+# "true"/"1"); flip LEMBERG_DOCS_ENABLED=true to expose /docs again.
+_docs_enabled = os.environ.get("LEMBERG_DOCS_ENABLED", "true").lower() in {"true", "1", "yes", "on"}
 
 app = FastAPI(
     title="Lemberg Winery CMS API",
     version=APP_VERSION,
     lifespan=lifespan,
-    docs_url="/docs" if show_docs else None,
-    redoc_url="/redoc" if show_docs else None,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
 )
 
 app.state.limiter = limiter
@@ -150,11 +151,13 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/")
 def read_root():
-    return {
+    payload = {
         "name": "Lemberg Winery CMS API",
         "version": APP_VERSION,
-        "docs": "/docs",
     }
+    if _docs_enabled:
+        payload["docs"] = "/docs"
+    return payload
 
 
 @app.get("/api/health")

@@ -95,6 +95,28 @@ DEFAULT_CONFIG = {
     "experienceTasting": "6 wines · 75 min",
     "experienceBooking": "By appointment only",
 
+    # ─── Reservation form copy + event taxonomy ───
+    # Drives the public /reservation page wording AND the event-inquiry
+    # dropdown options. Event types are newline-separated so editors can
+    # add or remove entries from a single textarea — no JSON gymnastics.
+    "reservationEyebrow": "Reserve a tasting",
+    "reservationHeading": "Plan your visit",
+    "reservationHeadingItalic": "to the estate.",
+    "reservationBody": (
+        "Private tastings by appointment, Tuesday to Saturday. Tell us "
+        "who is joining and which afternoon suits — we'll write back "
+        "within a working day to confirm."
+    ),
+    "reservationSuccessHeading": "Thank you — see you soon.",
+    "reservationEventTypes": (
+        "Weddings\n"
+        "Corporate events\n"
+        "Wine tastings\n"
+        "Private functions\n"
+        "Farm experiences\n"
+        "Hospitality events"
+    ),
+
     "clubEyebrow": "Allocation list",
     "clubHeading": "Join the club.",
     "clubBody": (
@@ -153,6 +175,7 @@ DEFAULT_CONFIG = {
     # don't match any known layout key.
     "collectionLayout": "editorial",     # editorial | filter-grid | compact | mosaic
     "collectionColumns": "3",            # "2" | "3" | "4" — applies to editorial + filter-grid
+    "collectionPageSize": "9",           # "3" | "6" | "9" — landing pagination size (cap 9)
     "featuredBentoLayout": "stack-right",  # stack-right | stack-left | top-hero | tri-equal
 
     # ─── Hero slider ───
@@ -171,6 +194,28 @@ DEFAULT_CONFIG = {
     "heroSliderAnimation": "fade",       # fade | slide | kenburns | stack
     "heroSliderAutoplay": "true",
     "heroSliderInterval": "6000",        # ms between auto-advances
+
+    # ─── Age verification gate ───
+    # Compliance gate shown to public visitors before they can interact with
+    # the site. Editors control wording + minimum age + how long a successful
+    # confirmation is remembered. Disabled by default so an empty deployment
+    # doesn't surprise visitors with a gate that has placeholder copy.
+    "ageGateEnabled": "false",
+    "ageGateMinAge": "18",
+    "ageGateHeading": "Are you of",
+    "ageGateHeadingItalic": "legal drinking age?",
+    "ageGateBody": (
+        "The wines of Lemberg Estate are intended for visitors aged 18 and over. "
+        "Please confirm your age to enter the cellar."
+    ),
+    "ageGateConfirmLabel": "Yes, I am of age",
+    "ageGateDenyLabel": "I'm under age",
+    "ageGateDenyMessage": (
+        "Thank you for your honesty. Please come back when you are old enough to "
+        "enjoy our wines responsibly."
+    ),
+    "ageGateRememberDays": "30",         # how many days to remember a confirmation
+    "ageGateBackgroundImage": "",        # optional override; falls back to heroBackgroundImage
 }
 
 
@@ -181,6 +226,7 @@ DEFAULT_WINES = [
         vintage="2021",
         varietal="Bordeaux Blend",
         region="Tulbagh",
+        category="Red · Reserve",
         alcohol="14.0%",
         description="Cabernet-led flagship. Bold, prestigious, unhurried.",
         tastingNotes="Cassis, graphite, dried bay leaf, and the faintest brush of cedar.",
@@ -199,6 +245,7 @@ DEFAULT_WINES = [
         vintage="2022",
         varietal="Syrah · Mourvèdre · Grenache",
         region="Tulbagh",
+        category="Red",
         alcohol="13.5%",
         description="Dark fruit, spice, and enduring complexity.",
         tastingNotes="Black cherry, white pepper, smoked thyme.",
@@ -217,6 +264,7 @@ DEFAULT_WINES = [
         vintage="2022",
         varietal="Pinot Noir",
         region="Tulbagh",
+        category="Red",
         alcohol="12.5%",
         description="Delicate, refined, aromatic. Quiet conviction.",
         tastingNotes="Raspberry leaf, rose petal, wet stone.",
@@ -235,6 +283,7 @@ DEFAULT_WINES = [
         vintage="2022",
         varietal="Pinotage",
         region="Tulbagh",
+        category="Red",
         alcohol="13.5%",
         description="Rooted, confident, unmistakably South African.",
         tastingNotes="Mulberry, dark chocolate, rooibos.",
@@ -253,6 +302,7 @@ DEFAULT_WINES = [
         vintage="2024",
         varietal="Chenin Blanc",
         region="Tulbagh",
+        category="White",
         alcohol="12.5%",
         description="A fresh, balanced expression of terroir.",
         tastingNotes="Quince, honeysuckle, sea salt.",
@@ -271,6 +321,7 @@ DEFAULT_WINES = [
         vintage="2022",
         varietal="White Blend",
         region="Tulbagh",
+        category="White",
         alcohol="12.5%",
         description="Floral, bright, and quietly luminous.",
         tastingNotes="White peach, jasmine, lemon pith.",

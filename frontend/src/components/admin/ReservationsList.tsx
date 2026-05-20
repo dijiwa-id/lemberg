@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Calendar,
   Users,
+  Sparkles,
   AlertCircle,
 } from "lucide-react";
 import { Card } from "./Card";
@@ -311,6 +312,11 @@ function ReservationRow({
             <p className="truncate font-display text-base leading-tight text-[var(--color-bone-100)]">
               {reservation.name}
             </p>
+            {reservation.event_type && (
+              <span className="inline-flex items-center border border-[color-mix(in_srgb,var(--color-pearl-300)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-pearl-300)_6%,transparent)] px-2 py-0.5 label-eyebrow text-[var(--color-pearl-300)]">
+                {reservation.event_type}
+              </span>
+            )}
           </div>
           <p className="mt-1 truncate text-xs text-[var(--color-bone-400)]">
             <Users size={11} className="-mt-0.5 inline align-baseline" />{" "}
@@ -377,6 +383,19 @@ function ReservationRow({
                     >
                       {reservation.phone}
                     </a>
+                  ) : (
+                    <span className="text-[var(--color-bone-500)]">—</span>
+                  )
+                }
+              />
+              <DetailRow
+                icon={Sparkles}
+                label="Event type"
+                value={
+                  reservation.event_type ? (
+                    <span className="inline-flex items-center border border-[color-mix(in_srgb,var(--color-pearl-300)_40%,transparent)] bg-[color-mix(in_srgb,var(--color-pearl-300)_8%,transparent)] px-2 py-0.5 label-eyebrow text-[var(--color-pearl-300)]">
+                      {reservation.event_type}
+                    </span>
                   ) : (
                     <span className="text-[var(--color-bone-500)]">—</span>
                   )

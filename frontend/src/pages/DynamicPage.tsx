@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { Nav } from "../components/Nav";
+import { AgeGate } from "../components/AgeGate";
 import { Footer } from "../components/sections/Footer";
 import { Reveal, RevealLines } from "../components/motion/Reveal";
 import { ImageReveal } from "../components/motion/ImageReveal";
@@ -124,6 +125,7 @@ export default function DynamicPage() {
         Skip to content
       </a>
 
+      <AgeGate config={config} />
       <Nav
         config={config}
         menu={menu}

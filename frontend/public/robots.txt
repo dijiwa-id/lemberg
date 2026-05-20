@@ -1,0 +1,16 @@
+# Lemberg Winery — public crawler policy.
+# Allow indexing of the public landing + content pages; keep the CMS
+# studio, raw uploads, and JSON config endpoint out of search results.
+# Defence in depth: the studio link is also removed from the footer and
+# the admin shell is auth-gated, but disallowing here prevents passive
+# discovery via search engines.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/
+
+# Helpful for crawlers to find the home page entry.
+Sitemap: /sitemap.xml

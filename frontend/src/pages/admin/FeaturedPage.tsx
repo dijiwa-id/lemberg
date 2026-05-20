@@ -107,7 +107,7 @@ export function FeaturedPage({ ctx }: { ctx: AdminContext }) {
             value={String(config.featuredWineId || "")}
             onChange={(v) => update({ featuredWineId: v })}
             options={wineOptions}
-            hint="Varietal, vintage, alcohol, and price are pulled from the wine itself."
+            hint="Varietal, vintage, category, and price are pulled from the wine itself."
           />
         </Card>
 

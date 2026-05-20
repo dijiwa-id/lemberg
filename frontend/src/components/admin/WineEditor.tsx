@@ -131,7 +131,7 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
           </div>
           <p className="mt-1 truncate text-xs text-[var(--color-bone-400)]">
             {wine.varietal || "Varietal"} · {wine.region || "—"}
-            {wine.alcohol ? ` · ${wine.alcohol}` : ""}
+            {wine.category ? ` · ${wine.category}` : ""}
           </p>
         </div>
 
@@ -193,10 +193,11 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
             onChange={(v) => persist({region: v })}
           />
           <TextField
-            label="Alcohol"
-            value={wine.alcohol || ""}
-            onChange={(v) => persist({alcohol: v })}
-            placeholder="14.0%"
+            label="Category"
+            value={wine.category || ""}
+            onChange={(v) => persist({ category: v })}
+            placeholder="Red · Reserve"
+            hint="Free-text label shown in landing filters (Red, White, Rosé, Sparkling, Reserve …)."
           />
           <NumberField
             label="Price (ZAR)"

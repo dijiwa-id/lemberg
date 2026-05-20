@@ -29,6 +29,15 @@ backend/cms.db-wal
 backend/cms.db-shm
 backend/uploads/
 
+# Defence in depth: catch any stray sqlite file regardless of where it
+# lands (e.g. uvicorn started from the wrong working directory once
+# created a frontend/cms.db copy). Production data must never enter git.
+**/cms.db
+**/cms.db-journal
+**/cms.db-wal
+**/cms.db-shm
+**/uploads/
+
 # IDE / editor
 .vscode/
 .idea/

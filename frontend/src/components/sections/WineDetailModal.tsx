@@ -185,7 +185,7 @@ export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps)
               {/* Meta row */}
               <dl className="mt-8 grid grid-cols-3 gap-6 border-y border-[var(--border-subtle)] py-5">
                 <Meta label="Region" value={wine.region} />
-                <Meta label="Alcohol" value={wine.alcohol} />
+                <Meta label="Category" value={wine.category || wine.alcohol} />
                 <Meta
                   label="Price"
                   value={

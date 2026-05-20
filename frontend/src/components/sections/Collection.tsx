@@ -1,6 +1,6 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
-import { Filter, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
 import type { SiteConfig, Wine } from "../../lib/types";
 import { currencySymbol, wineDefaultImage } from "../../lib/types";
 import { resolveAsset } from "../../services/api";
@@ -46,6 +46,197 @@ const COLUMN_CLASSES: Record<Columns, string> = {
   4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
 };
 
+/* Pagination cap — editor picks 3 / 6 / 9 in the studio. Bounded at 9 so a
+ * single page never overwhelms the visitor. Unknown values fall back to 9. */
+function resolvePageSize(raw: string | undefined): number {
+  if (raw === "3") return 3;
+  if (raw === "6") return 6;
+  return 9;
+}
+
+/**
+ * Pagination state for a list of items. Clamps the page when items shrink
+ * (filter changes, deletes) instead of getting stuck on an empty page —
+ * no race conditions, no resetKey props, just always-valid state.
+ */
+function usePagination<T>(items: T[], pageSize: number) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const start = safePage * pageSize;
+  const pageItems = items.slice(start, start + pageSize);
+
+  function gotoPage(next: number) {
+    const clamped = Math.max(0, Math.min(next, totalPages - 1));
+    setPage(clamped);
+    // Scroll the section top into view AFTER state commits so the smooth
+    // scroll lands on the freshly-mounted page. rAF aligns the scroll
+    // with the next paint — short delay, no jank.
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        const section = document.getElementById("collection");
+        if (!section) return;
+        const rect = section.getBoundingClientRect();
+        // Only scroll if the section top is above the viewport (visitor
+        // scrolled past it) — avoids forcing scroll when they're already
+        // looking at the grid.
+        if (rect.top < 0) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
+
+  return {
+    page: safePage,
+    setPage: gotoPage,
+    totalPages,
+    pageItems,
+    hasMultiplePages: totalPages > 1,
+    rangeStart: items.length === 0 ? 0 : start + 1,
+    rangeEnd: start + pageItems.length,
+    total: items.length,
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Pagination component — editorial style
+ *
+ * `< 01 02 03 >` with an animated pearl underline that slides between
+ * active numbers (motion `layoutId`). Below: "Showing 1–9 of 27 wines"
+ * for context. Component renders nothing when there's only one page so
+ * smaller catalogues get a clean section without leftover chrome.
+ * ─────────────────────────────────────────────────────────────────── */
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  rangeStart: number;
+  rangeEnd: number;
+  total: number;
+  onChange: (next: number) => void;
+}
+
+function Pagination({
+  page,
+  totalPages,
+  rangeStart,
+  rangeEnd,
+  total,
+  onChange,
+}: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav
+      aria-label="Wine collection pagination"
+      className="mt-16 flex flex-col items-center gap-4"
+    >
+      <div className="flex items-center gap-1">
+        <PaginationArrow
+          direction="prev"
+          disabled={page === 0}
+          onClick={() => onChange(page - 1)}
+        />
+        <ol className="flex items-center gap-1" role="list">
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const active = i === page;
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() => onChange(i)}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={`Go to page ${i + 1} of ${totalPages}`}
+                  className={cn(
+                    "relative px-4 py-2 font-mono text-[12px] tracking-[0.2em] transition-colors",
+                    active
+                      ? "text-[var(--color-pearl-300)]"
+                      : "text-[var(--color-bone-500)] hover:text-[var(--color-bone-100)]"
+                  )}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                  {active && (
+                    <motion.span
+                      layoutId="collection-page-underline"
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                      className="pointer-events-none absolute inset-x-3 -bottom-px h-px bg-[var(--color-pearl-300)]"
+                    />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <PaginationArrow
+          direction="next"
+          disabled={page >= totalPages - 1}
+          onClick={() => onChange(page + 1)}
+        />
+      </div>
+      <p className="label-eyebrow text-[var(--color-bone-500)]">
+        Showing {rangeStart}–{rangeEnd} of {total}
+        {total === 1 ? " wine" : " wines"}
+      </p>
+    </nav>
+  );
+}
+
+function PaginationArrow({
+  direction,
+  disabled,
+  onClick,
+}: {
+  direction: "prev" | "next";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const Icon = direction === "prev" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={direction === "prev" ? "Previous page" : "Next page"}
+      className={cn(
+        "flex h-9 w-9 items-center justify-center transition-colors",
+        disabled
+          ? "cursor-not-allowed text-[var(--color-bone-600)]/40"
+          : "text-[var(--color-bone-400)] hover:text-[var(--color-pearl-300)]"
+      )}
+    >
+      <Icon size={16} strokeWidth={1.25} />
+    </button>
+  );
+}
+
+/* Animated wrapper used by each layout so a page change feels intentional
+ * rather than a hard swap. `mode="wait"` runs exit then enter — keeps the
+ * editorial feel that overlap would interrupt. */
+const PAGE_TRANSITION = { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const };
+
+function PagedGrid({
+  pageKey,
+  children,
+}: {
+  pageKey: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={`page-${pageKey}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={PAGE_TRANSITION}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 interface CollectionProps {
   config: SiteConfig;
   wines: Wine[];
@@ -55,6 +246,7 @@ interface CollectionProps {
 export function Collection({ config, wines, onOpenWine }: CollectionProps) {
   const layout = resolveLayout(config.collectionLayout);
   const columns = resolveColumns(config.collectionColumns);
+  const pageSize = resolvePageSize(config.collectionPageSize);
   const symbol = currencySymbol(config.currency);
 
   return (
@@ -66,16 +258,38 @@ export function Collection({ config, wines, onOpenWine }: CollectionProps) {
         <CollectionHeader config={config} />
 
         {layout === "editorial" && (
-          <EditorialGrid wines={wines} symbol={symbol} columns={columns} onOpenWine={onOpenWine} />
+          <EditorialGrid
+            wines={wines}
+            symbol={symbol}
+            columns={columns}
+            pageSize={pageSize}
+            onOpenWine={onOpenWine}
+          />
         )}
         {layout === "filter-grid" && (
-          <FilterGrid wines={wines} symbol={symbol} columns={columns} onOpenWine={onOpenWine} />
+          <FilterGrid
+            wines={wines}
+            symbol={symbol}
+            columns={columns}
+            pageSize={pageSize}
+            onOpenWine={onOpenWine}
+          />
         )}
         {layout === "compact" && (
-          <CompactList wines={wines} symbol={symbol} onOpenWine={onOpenWine} />
+          <CompactList
+            wines={wines}
+            symbol={symbol}
+            pageSize={pageSize}
+            onOpenWine={onOpenWine}
+          />
         )}
         {layout === "mosaic" && (
-          <MosaicGrid wines={wines} symbol={symbol} onOpenWine={onOpenWine} />
+          <MosaicGrid
+            wines={wines}
+            symbol={symbol}
+            pageSize={pageSize}
+            onOpenWine={onOpenWine}
+          />
         )}
 
         <Reveal y={20} delay={0.2} className="mt-24 flex justify-center">
@@ -141,24 +355,60 @@ interface LayoutProps {
   /** Desktop column count — editorial + filter-grid honour it; compact +
    *  mosaic ignore it because their shape is fixed by design. */
   columns?: Columns;
+  /** Max items per rendered page. Pagination kicks in only when the
+   *  visible-after-filter list is longer than this. */
+  pageSize?: number;
 }
 
-function EditorialGrid({ wines, symbol, columns = 3, onOpenWine }: LayoutProps) {
+function EditorialGrid({
+  wines,
+  symbol,
+  columns = 3,
+  pageSize = 9,
+  onOpenWine,
+}: LayoutProps) {
   const [hovered, setHovered] = useState<number | string | null>(null);
+  const {
+    page,
+    setPage,
+    totalPages,
+    pageItems,
+    rangeStart,
+    rangeEnd,
+    total,
+  } = usePagination(wines, pageSize);
+
   return (
-    <div className={cn("grid gap-10 sm:gap-8 lg:gap-12", COLUMN_CLASSES[columns])}>
-      {wines.map((wine, i) => (
-        <Reveal key={wine.id} y={36} delay={(i % columns) * 0.08} className="group flex h-full flex-col">
-          <WineCard
-            wine={wine}
-            symbol={symbol}
-            hovered={hovered === wine.id}
-            onHover={(v) => setHovered(v ? wine.id : null)}
-            onOpen={() => onOpenWine?.(wine)}
-          />
-        </Reveal>
-      ))}
-    </div>
+    <>
+      <PagedGrid pageKey={page}>
+        <div className={cn("grid gap-10 sm:gap-8 lg:gap-12", COLUMN_CLASSES[columns])}>
+          {pageItems.map((wine, i) => (
+            <Reveal
+              key={wine.id}
+              y={36}
+              delay={(i % columns) * 0.08}
+              className="group flex h-full flex-col"
+            >
+              <WineCard
+                wine={wine}
+                symbol={symbol}
+                hovered={hovered === wine.id}
+                onHover={(v) => setHovered(v ? wine.id : null)}
+                onOpen={() => onOpenWine?.(wine)}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </PagedGrid>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        total={total}
+        onChange={setPage}
+      />
+    </>
   );
 }
 
@@ -170,13 +420,32 @@ function EditorialGrid({ wines, symbol, columns = 3, onOpenWine }: LayoutProps) 
  * filter. Selecting filter pills narrows the visible wines client-side.
  * ─────────────────────────────────────────────────────────────────── */
 
-function FilterGrid({ wines, symbol, columns = 3, onOpenWine }: LayoutProps) {
+function FilterGrid({
+  wines,
+  symbol,
+  columns = 3,
+  pageSize = 9,
+  onOpenWine,
+}: LayoutProps) {
   const [hovered, setHovered] = useState<number | string | null>(null);
   const [open, setOpen] = useState(false);  // mobile drawer
   const [active, setActive] = useState<Record<string, Set<string>>>({});
 
   const facets = useMemo(() => buildFacets(wines), [wines]);
   const filtered = useMemo(() => applyFilters(wines, active), [wines, active]);
+
+  // Paginate AFTER filtering — usePagination clamps the page when the
+  // filtered list shrinks, so applying a tighter filter while on page 3
+  // smoothly snaps to the last valid page rather than showing emptiness.
+  const {
+    page,
+    setPage,
+    totalPages,
+    pageItems,
+    rangeStart,
+    rangeEnd,
+    total,
+  } = usePagination(filtered, pageSize);
 
   function toggle(facet: string, value: string) {
     setActive((cur) => {
@@ -302,19 +571,36 @@ function FilterGrid({ wines, symbol, columns = 3, onOpenWine }: LayoutProps) {
             </button>
           </div>
         ) : (
-          <div className={cn("mt-10 grid gap-10 sm:gap-8", COLUMN_CLASSES[columns])}>
-            {filtered.map((wine, i) => (
-              <Reveal key={wine.id} y={28} delay={(i % columns) * 0.06} className="group flex flex-col">
-                <WineCard
-                  wine={wine}
-                  symbol={symbol}
-                  hovered={hovered === wine.id}
-                  onHover={(v) => setHovered(v ? wine.id : null)}
-                  onOpen={() => onOpenWine?.(wine)}
-                />
-              </Reveal>
-            ))}
-          </div>
+          <>
+            <PagedGrid pageKey={page}>
+              <div className={cn("mt-10 grid gap-10 sm:gap-8", COLUMN_CLASSES[columns])}>
+                {pageItems.map((wine, i) => (
+                  <Reveal
+                    key={wine.id}
+                    y={28}
+                    delay={(i % columns) * 0.06}
+                    className="group flex flex-col"
+                  >
+                    <WineCard
+                      wine={wine}
+                      symbol={symbol}
+                      hovered={hovered === wine.id}
+                      onHover={(v) => setHovered(v ? wine.id : null)}
+                      onOpen={() => onOpenWine?.(wine)}
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            </PagedGrid>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              total={total}
+              onChange={setPage}
+            />
+          </>
         )}
       </div>
     </div>
@@ -325,10 +611,18 @@ interface Facet {
   key: string;
   label: string;
   values: string[];
+  /** True when at least one wine lacks a value for this field — used by
+   *  `buildFacets` to decide whether a single-value facet is still useful
+   *  (clicking it isolates the wines that have the value). */
+  hasEmpty: boolean;
 }
 
 function buildFacets(wines: Wine[]): Facet[] {
+  // Category leads the list — it's the broadest grouping (Red/White/…)
+  // so visitors scan from coarse to fine. Order also drives the
+  // top-to-bottom render order in the sidebar.
   const fields: Array<{ key: keyof Wine; label: string }> = [
+    { key: "category", label: "Category" },
     { key: "varietal", label: "Varietal" },
     { key: "region", label: "Region" },
     { key: "vintage", label: "Vintage" },
@@ -337,14 +631,24 @@ function buildFacets(wines: Wine[]): Facet[] {
   return fields
     .map((f) => {
       const set = new Set<string>();
+      let hasEmpty = false;
       wines.forEach((w) => {
         const v = (w[f.key] as string | undefined)?.trim();
         if (v) set.add(v);
+        else hasEmpty = true;
       });
       const values = Array.from(set).sort();
-      return { key: String(f.key), label: f.label, values };
+      return { key: String(f.key), label: f.label, values, hasEmpty };
     })
-    .filter((f) => f.values.length >= 2);  // only show meaningful facets
+    // Show a facet when clicking would actually narrow the visible
+    // wines, i.e. when at least two distinct buckets exist:
+    //   - ≥2 distinct non-empty values, OR
+    //   - ≥1 distinct value AND some wines lack the field
+    //     (clicking the value isolates the ones that have it)
+    // This fixes the editor-confusing case where a single shared value
+    // (e.g. 3 wines tagged "Reserve", 3 untagged) used to hide the
+    // filter entirely just because there was only one unique value.
+    .filter((f) => f.values.length >= 2 || (f.values.length >= 1 && f.hasEmpty));
 }
 
 function applyFilters(wines: Wine[], active: Record<string, Set<string>>): Wine[] {
@@ -409,11 +713,23 @@ function FacetBlock({
  * Layout 3 — Compact list (full-width rows)
  * ─────────────────────────────────────────────────────────────────── */
 
-function CompactList({ wines, symbol, onOpenWine }: LayoutProps) {
+function CompactList({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
+  const {
+    page,
+    setPage,
+    totalPages,
+    pageItems,
+    rangeStart,
+    rangeEnd,
+    total,
+  } = usePagination(wines, pageSize);
+
   return (
-    <div className="divide-y divide-[var(--border-subtle)]">
-      {wines.map((wine, i) => (
-        <Reveal key={wine.id} y={20} delay={(i % 4) * 0.05}>
+    <>
+      <PagedGrid pageKey={page}>
+        <div className="divide-y divide-[var(--border-subtle)]">
+          {pageItems.map((wine, i) => (
+            <Reveal key={wine.id} y={20} delay={(i % 4) * 0.05}>
           <button
             type="button"
             onClick={() => onOpenWine?.(wine)}
@@ -457,19 +773,45 @@ function CompactList({ wines, symbol, onOpenWine }: LayoutProps) {
         </Reveal>
       ))}
     </div>
+      </PagedGrid>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        total={total}
+        onChange={setPage}
+      />
+    </>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────
  * Layout 4 — Mosaic (hero + supporting cards)
+ *
+ * The hero is the FIRST wine of the active page — so when the visitor
+ * paginates, each page reveals its own featured wine plus supporting
+ * cards. Pagination only kicks in when total wines exceed the page size.
  * ─────────────────────────────────────────────────────────────────── */
 
-function MosaicGrid({ wines, symbol, onOpenWine }: LayoutProps) {
-  if (wines.length === 0) return null;
-  const [hero, ...rest] = wines;
+function MosaicGrid({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
   const [hovered, setHovered] = useState<number | string | null>(null);
+  const {
+    page,
+    setPage,
+    totalPages,
+    pageItems,
+    rangeStart,
+    rangeEnd,
+    total,
+  } = usePagination(wines, pageSize);
+
+  if (pageItems.length === 0) return null;
+  const [hero, ...rest] = pageItems;
 
   return (
+    <>
+      <PagedGrid pageKey={page}>
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
       {/* Hero (spans 7 columns) */}
       <Reveal y={36} className="lg:col-span-7">
@@ -525,6 +867,16 @@ function MosaicGrid({ wines, symbol, onOpenWine }: LayoutProps) {
         ))}
       </div>
     </div>
+      </PagedGrid>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        total={total}
+        onChange={setPage}
+      />
+    </>
   );
 }
 

@@ -24,6 +24,11 @@ class Wine(Base):
     vintage = Column(String, nullable=True)
     varietal = Column(String, nullable=True)
     region = Column(String, nullable=True)
+    # `category` is the high-level group editors use to filter on the
+    # landing page (e.g. Red, White, Rosé, Sparkling, Reserve). Replaced
+    # the `alcohol` field in the studio's wine form — alcohol stays on
+    # the model as a deprecated column so existing data is preserved.
+    category = Column(String, nullable=True)
     alcohol = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     # Use camelCase python attrs to match Pydantic field names — keeps
@@ -113,6 +118,11 @@ class Reservation(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=False, index=True)
     phone = Column(String, nullable=True)
+    # Free-text event category — values come from the editor-configurable
+    # `reservationEventTypes` list (Weddings, Corporate events, Wine tastings,
+    # Private functions, Farm experiences, Hospitality events …). Nullable
+    # because older reservations existed before the field was added.
+    event_type = Column(String, nullable=True, index=True)
     party_size = Column(Integer, default=2)
     visit_date = Column(String, nullable=False, index=True)  # YYYY-MM-DD
     visit_time = Column(String, nullable=False)              # HH:MM

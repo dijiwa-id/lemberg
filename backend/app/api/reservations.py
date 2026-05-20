@@ -65,6 +65,7 @@ def create_reservation(request: Request, payload: ReservationCreate, db: Session
         name=payload.name.strip(),
         email=payload.email.strip().lower(),
         phone=(payload.phone or "").strip() or None,
+        event_type=(payload.event_type or "").strip() or None,
         party_size=payload.party_size or 2,
         visit_date=payload.visit_date,
         visit_time=payload.visit_time,
