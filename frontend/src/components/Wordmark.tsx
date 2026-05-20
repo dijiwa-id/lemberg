@@ -35,6 +35,8 @@ export function Wordmark({
     <img
       src={imageSrc}
       alt=""
+      loading="eager"
+      fetchPriority="high"
       className={cn(
         "object-contain shrink-0",
         layout === "stacked" ? "h-10 w-auto" : "h-7 w-auto"

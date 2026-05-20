@@ -52,6 +52,8 @@ export function SplashScreen() {
           <img
             src={iconUrl}
             alt={brand.logoText}
+            loading="eager"
+            fetchPriority="high"
             className="h-14 w-auto object-contain"
             // Fall back to the bundled monogram if the uploaded icon 404s
             // (e.g. cache referencing a deleted /uploads/* file).
