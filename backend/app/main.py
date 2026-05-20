@@ -3,9 +3,12 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.api import auth, cms, menu, reservations, subscribers, templates
 from app.api.cms import UPLOAD_DIR
@@ -27,6 +30,9 @@ logger = logging.getLogger("lemberg")
 Base.metadata.create_all(bind=engine)
 add_missing_columns(engine)
 
+# ── Rate Limiting ───────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+
 
 # ── Lifespan (replaces deprecated @on_event) ────────────────────────────
 @asynccontextmanager
@@ -44,12 +50,23 @@ async def lifespan(app: FastAPI):
 
 
 APP_VERSION = os.environ.get("LEMBERG_VERSION", "1.1.0")
+ENV = os.environ.get("LEMBERG_ENV", "development")
+
+# Disable docs in production if requested
+show_docs = os.environ.get("LEMBERG_SHOW_DOCS", "true").lower() == "true"
+if ENV == "production" and os.environ.get("LEMBERG_SHOW_DOCS") is None:
+    show_docs = False  # Default to false in production if not specified
 
 app = FastAPI(
     title="Lemberg Winery CMS API",
     version=APP_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if show_docs else None,
+    redoc_url="/redoc" if show_docs else None,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # ── CORS ────────────────────────────────────────────────────────────────
@@ -75,6 +92,28 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
     max_age=600,
 )
+
+
+# ── Security Headers ────────────────────────────────────────────────────
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # Basic CSP - restrict where assets can be loaded from
+    csp = (
+        "default-src 'self'; "
+        "img-src 'self' data: https://images.unsplash.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "script-src 'self'; "
+        "connect-src 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 
 # ── Request timing log ──────────────────────────────────────────────────

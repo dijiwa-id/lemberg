@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 import re
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.api.auth import get_current_user
 from app.database import get_db
@@ -18,6 +20,8 @@ from app.schemas.schemas import (
 
 
 router = APIRouter()
+
+limiter = Limiter(key_func=get_remote_address)
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -54,7 +58,8 @@ def _validate_payload(payload: ReservationCreate) -> None:
 
 
 @router.post("/reservations", response_model=ReservationResponse)
-def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def create_reservation(request: Request, payload: ReservationCreate, db: Session = Depends(get_db)):
     _validate_payload(payload)
     row = Reservation(
         name=payload.name.strip(),

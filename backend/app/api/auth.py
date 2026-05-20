@@ -13,11 +13,13 @@ Bootstrap rules:
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -34,6 +36,8 @@ from app.schemas.schemas import Token, UserCreate, UserResponse
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
+
+limiter = Limiter(key_func=get_remote_address)
 
 # Tunable minimums. Mirrors what the frontend form enforces.
 MIN_USERNAME = 3
@@ -83,7 +87,8 @@ def setup_needed(db: Session = Depends(get_db)) -> SetupStatus:
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-def register(user: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     """Bootstrap-only: creates the first administrator. Once any user
     exists, subsequent calls are rejected — new admins must be created
     from within the studio by an already-authenticated user (future work)."""
@@ -114,7 +119,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/token", response_model=Token)
+@limiter.limit("10/minute")
 def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):

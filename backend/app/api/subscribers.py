@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 import re
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.api.auth import get_current_user
 from app.database import get_db
@@ -15,11 +17,14 @@ from app.schemas.schemas import SubscriberCreate, SubscriberResponse
 
 router = APIRouter()
 
+limiter = Limiter(key_func=get_remote_address)
+
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 @router.post("/subscribers", response_model=SubscriberResponse)
-def create_subscriber(payload: SubscriberCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def create_subscriber(request: Request, payload: SubscriberCreate, db: Session = Depends(get_db)):
     """Idempotent — resubmitting the same email reactivates the existing
     record rather than creating a duplicate or rejecting."""
     email = (payload.email or "").strip().lower()
