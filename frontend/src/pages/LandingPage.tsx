@@ -13,6 +13,7 @@ import { Footer } from "../components/sections/Footer";
 import { VarietalRibbon } from "../components/sections/VarietalRibbon";
 import { WineDetailModal } from "../components/sections/WineDetailModal";
 import { Cursor } from "../components/Cursor";
+import { AgeGate } from "../components/AgeGate";
 import { MaintenancePage } from "../components/MaintenancePage";
 import {
   FALLBACK_CONFIG,
@@ -170,6 +171,7 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
         Skip to content
       </a>
       <Cursor />
+      <AgeGate config={config} />
       <Nav
         config={config}
         menu={menu}

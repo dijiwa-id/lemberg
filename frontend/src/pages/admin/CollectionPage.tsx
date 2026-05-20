@@ -9,6 +9,7 @@ import type { AdminContext } from "../Admin";
 
 type CollectionLayout = "editorial" | "filter-grid" | "compact" | "mosaic";
 type CollectionColumns = "2" | "3" | "4";
+type CollectionPageSize = "3" | "6" | "9";
 
 /** Layouts where the column count actually changes the rendered grid.
  *  Compact (full-width rows) and Mosaic (asymmetric hero) ignore it
@@ -19,20 +20,31 @@ const COLUMN_AWARE_LAYOUTS: ReadonlySet<CollectionLayout> = new Set([
   "filter-grid",
 ]);
 
-interface ColumnOption {
-  value: CollectionColumns;
+interface PillOption<T extends string> {
+  value: T;
   label: string;
 }
 
-const COLUMN_OPTIONS: ColumnOption[] = [
+const COLUMN_OPTIONS: PillOption<CollectionColumns>[] = [
   { value: "2", label: "Two" },
   { value: "3", label: "Three" },
   { value: "4", label: "Four" },
 ];
 
+const PAGE_SIZE_OPTIONS: PillOption<CollectionPageSize>[] = [
+  { value: "3", label: "3" },
+  { value: "6", label: "6" },
+  { value: "9", label: "9" },
+];
+
 function resolveColumns(raw: string | undefined): CollectionColumns {
   if (raw === "2" || raw === "4") return raw;
   return "3";
+}
+
+function resolvePageSize(raw: string | undefined): CollectionPageSize {
+  if (raw === "3" || raw === "6") return raw;
+  return "9";
 }
 
 const LAYOUT_OPTIONS: LayoutOption<CollectionLayout>[] = [
@@ -113,7 +125,12 @@ export function CollectionPage({ ctx }: { ctx: AdminContext }) {
 
   const currentLayout = resolveLayout(config.collectionLayout);
   const currentColumns = resolveColumns(config.collectionColumns);
+  const currentPageSize = resolvePageSize(config.collectionPageSize);
   const columnsApplies = COLUMN_AWARE_LAYOUTS.has(currentLayout);
+  // Pagination applies to every layout — each renderer respects the
+  // configured page size and only shows controls when the wine list
+  // actually exceeds the size, so smaller catalogues never see them.
+  const pageSizeFitsCatalogue = wines.length > Number(currentPageSize);
 
   return (
     <>
@@ -220,6 +237,66 @@ export function CollectionPage({ ctx }: { ctx: AdminContext }) {
                     >
                       <ColumnsDiagram count={Number(opt.value) as 2 | 3 | 4} active={active && columnsApplies} />
                       <span className="label-eyebrow">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Page size — applies to all layouts. When more wines exist
+              than this number, the landing page shows pagination
+              controls below the grid. */}
+          <div className="mt-6 border-t border-[var(--color-ink-700)] pt-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm text-[var(--color-bone-100)]">
+                  Products per page
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-bone-400)]">
+                  {pageSizeFitsCatalogue
+                    ? `Pagination will activate — your catalogue has ${wines.length} wines.`
+                    : `All ${wines.length} wines fit in one page at this size. Pagination only appears when there are more wines than the page size.`}
+                </p>
+              </div>
+              <div
+                role="radiogroup"
+                aria-label="Products per page"
+                className="inline-flex shrink-0 self-start border border-[var(--border-default)] sm:self-auto"
+              >
+                {PAGE_SIZE_OPTIONS.map((opt) => {
+                  const active = currentPageSize === opt.value;
+                  const willPaginate = wines.length > Number(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => update({ collectionPageSize: opt.value })}
+                      title={
+                        willPaginate
+                          ? `${opt.label} per page — ${Math.ceil(
+                              wines.length / Number(opt.value)
+                            )} pages`
+                          : `${opt.label} per page — fits in one page`
+                      }
+                      className={cn(
+                        "flex min-w-[64px] flex-col items-center gap-2 border-r border-[var(--border-default)] px-5 py-3 last:border-r-0 transition-colors",
+                        active
+                          ? "bg-[var(--color-ink-850)] text-[var(--color-pearl-300)]"
+                          : "text-[var(--color-bone-300)] hover:bg-[var(--color-ink-800)] hover:text-[var(--color-bone-100)]"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "font-display text-2xl leading-none",
+                          active && "text-[var(--color-pearl-300)]"
+                        )}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="label-eyebrow">per page</span>
                     </button>
                   );
                 })}

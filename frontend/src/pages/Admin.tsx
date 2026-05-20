@@ -35,6 +35,7 @@ import { SettingsPage } from "./admin/SettingsPage";
 import { MenuPage } from "./admin/MenuPage";
 import { TemplatesPage } from "./admin/TemplatesPage";
 import { StudioPage } from "./admin/StudioPage";
+import { AgeGatePage } from "./admin/AgeGatePage";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -253,6 +254,7 @@ function AdminShell() {
         <Route path="menu" element={<MenuPage />} />
         <Route path="templates" element={<TemplatesPage ctx={ctx} />} />
         <Route path="studio" element={<StudioPage ctx={ctx} />} />
+        <Route path="age-gate" element={<AgeGatePage ctx={ctx} />} />
         <Route path="settings" element={<SettingsPage ctx={ctx} />} />
         <Route path="preview" element={<PreviewPage ctx={ctx} />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

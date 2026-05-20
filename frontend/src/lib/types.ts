@@ -7,6 +7,10 @@ export interface Wine {
   vintage?: string;
   varietal?: string;
   region?: string;
+  /** High-level grouping shown in landing filters (Red, White, Rosé,
+   *  Sparkling, Reserve …). Replaced the `alcohol` field in the studio
+   *  form; `alcohol` is kept on the model for backwards compatibility. */
+  category?: string;
   alcohol?: string;
   description?: string;
   tastingNotes?: string;
@@ -92,6 +96,17 @@ export interface SiteConfig {
   experienceTasting?: string;      // e.g. "6 wines · 75 min"
   experienceBooking?: string;      // e.g. "By appointment only"
 
+  // ─── /reservation form copy + event taxonomy ───
+  // Drives the public reservation page wording. `reservationEventTypes`
+  // is a newline-separated list — each non-blank line becomes one
+  // dropdown option (see `parseEventTypes`).
+  reservationEyebrow?: string;
+  reservationHeading?: string;
+  reservationHeadingItalic?: string;
+  reservationBody?: string;
+  reservationSuccessHeading?: string;
+  reservationEventTypes?: string;
+
   clubEyebrow?: string;
   clubHeading?: string;
   clubBody?: string;
@@ -155,6 +170,7 @@ export interface SiteConfig {
   // Unknown values fall back to the default renderer — safe to roll back.
   collectionLayout?: string;            // editorial | filter-grid | compact | mosaic
   collectionColumns?: string;           // "2" | "3" | "4" — desktop column count
+  collectionPageSize?: string;          // "3" | "6" | "9" — landing pagination size (max 9)
   featuredBentoLayout?: string;         // stack-right | stack-left | top-hero | tri-equal
 
   // ─── Hero slider ───
@@ -168,6 +184,21 @@ export interface SiteConfig {
   heroSliderAnimation?: string;         // fade | slide | kenburns | stack
   heroSliderAutoplay?: string;          // "true" / "false"
   heroSliderInterval?: string;          // ms (numeric string)
+
+  // ─── Age verification gate ───
+  // Compliance pop-up shown to public visitors. Stored confirmation lives
+  // in localStorage with expiry (see lib/ageGate.ts). When disabled, the
+  // gate component renders nothing — landing page behaves as before.
+  ageGateEnabled?: string;              // "true" / "false"
+  ageGateMinAge?: string;               // numeric string (e.g. "18", "21")
+  ageGateHeading?: string;
+  ageGateHeadingItalic?: string;
+  ageGateBody?: string;
+  ageGateConfirmLabel?: string;
+  ageGateDenyLabel?: string;
+  ageGateDenyMessage?: string;
+  ageGateRememberDays?: string;         // numeric string
+  ageGateBackgroundImage?: string;
 }
 
 /* Helpers for boolean-as-string config values. The backend stores all
@@ -291,6 +322,10 @@ export interface Reservation {
   name: string;
   email: string;
   phone?: string | null;
+  /** Editor-defined event taxonomy — drives the dropdown on the public
+   *  reservation form. Nullable because rows created before the field
+   *  existed don't have it. */
+  event_type?: string | null;
   party_size: number;
   visit_date: string;   // YYYY-MM-DD
   visit_time: string;   // HH:MM
@@ -389,10 +424,22 @@ export interface ReservationCreate {
   name: string;
   email: string;
   phone?: string;
+  event_type?: string;
   party_size: number;
   visit_date: string;
   visit_time: string;
   message?: string;
+}
+
+/** Parse the editor's newline-separated event types into a clean array.
+ *  Defensive: empty/missing input returns an empty list; lines are
+ *  trimmed and blank lines dropped. */
+export function parseEventTypes(raw: string | undefined | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -575,6 +622,16 @@ export const FALLBACK_CONFIG: SiteConfig = {
   experienceTasting: "6 wines · 75 min",
   experienceBooking: "By appointment only",
 
+  // Reservation form
+  reservationEyebrow: "Reserve a tasting",
+  reservationHeading: "Plan your visit",
+  reservationHeadingItalic: "to the estate.",
+  reservationBody:
+    "Private tastings by appointment, Tuesday to Saturday. Tell us who is joining and which afternoon suits — we'll write back within a working day to confirm.",
+  reservationSuccessHeading: "Thank you — see you soon.",
+  reservationEventTypes:
+    "Weddings\nCorporate events\nWine tastings\nPrivate functions\nFarm experiences\nHospitality events",
+
   clubEyebrow: "Allocation list",
   clubHeading: "Join the club.",
   clubBody:
@@ -621,6 +678,7 @@ export const FALLBACK_CONFIG: SiteConfig = {
   // Landing layout variants
   collectionLayout: "editorial",
   collectionColumns: "3",
+  collectionPageSize: "9",
   featuredBentoLayout: "stack-right",
 
   // Hero slider — empty slides → legacy single-image hero
@@ -630,6 +688,20 @@ export const FALLBACK_CONFIG: SiteConfig = {
   heroSliderAnimation: "fade",
   heroSliderAutoplay: "true",
   heroSliderInterval: "6000",
+
+  // Age verification gate — disabled by default; editor enables per-deployment.
+  ageGateEnabled: "false",
+  ageGateMinAge: "18",
+  ageGateHeading: "Are you of",
+  ageGateHeadingItalic: "legal drinking age?",
+  ageGateBody:
+    "The wines of Lemberg Estate are intended for visitors aged 18 and over. Please confirm your age to enter the cellar.",
+  ageGateConfirmLabel: "Yes, I am of age",
+  ageGateDenyLabel: "I'm under age",
+  ageGateDenyMessage:
+    "Thank you for your honesty. Please come back when you are old enough to enjoy our wines responsibly.",
+  ageGateRememberDays: "30",
+  ageGateBackgroundImage: "",
 };
 
 export const FALLBACK_WINES: Wine[] = [
@@ -640,6 +712,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2021",
     varietal: "Bordeaux Blend",
     region: "Tulbagh",
+    category: "Red · Reserve",
     alcohol: "14.0%",
     description: "Cabernet-led flagship. Bold, prestigious, unhurried.",
     tastingNotes:
@@ -658,6 +731,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2022",
     varietal: "Syrah · Mourvèdre · Grenache",
     region: "Tulbagh",
+    category: "Red",
     alcohol: "13.5%",
     description: "Dark fruit, spice, and enduring complexity.",
     tastingNotes: "Black cherry, white pepper, smoked thyme.",
@@ -675,6 +749,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2022",
     varietal: "Pinot Noir",
     region: "Tulbagh",
+    category: "Red",
     alcohol: "12.5%",
     description: "Delicate, refined, aromatic. Quiet conviction.",
     tastingNotes: "Raspberry leaf, rose petal, wet stone.",
@@ -692,6 +767,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2022",
     varietal: "Pinotage",
     region: "Tulbagh",
+    category: "Red",
     alcohol: "13.5%",
     description: "Rooted, confident, unmistakably South African.",
     tastingNotes: "Mulberry, dark chocolate, rooibos.",
@@ -709,6 +785,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2024",
     varietal: "Chenin Blanc",
     region: "Tulbagh",
+    category: "White",
     alcohol: "12.5%",
     description: "A fresh, balanced expression of terroir.",
     tastingNotes: "Quince, honeysuckle, sea salt.",
@@ -726,6 +803,7 @@ export const FALLBACK_WINES: Wine[] = [
     vintage: "2022",
     varietal: "White Blend",
     region: "Tulbagh",
+    category: "White",
     alcohol: "12.5%",
     description: "Floral, bright, and quietly luminous.",
     tastingNotes: "White peach, jasmine, lemon pith.",

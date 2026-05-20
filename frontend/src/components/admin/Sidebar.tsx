@@ -16,6 +16,7 @@ import {
   Menu as MenuIcon,
   Layers,
   Building2,
+  ShieldCheck,
   LogOut,
   X,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const TOOL_ITEMS: NavItemDef[] = [
   { to: "/admin/menu", icon: MenuIcon, label: "Header menu" },
   { to: "/admin/templates", icon: Layers, label: "Template themes" },
   { to: "/admin/studio", icon: Building2, label: "Studio identity" },
+  { to: "/admin/age-gate", icon: ShieldCheck, label: "Age verification" },
   { to: "/admin/preview", icon: Eye, label: "Live preview" },
   { to: "/admin/settings", icon: SettingsIcon, label: "Settings" },
 ];

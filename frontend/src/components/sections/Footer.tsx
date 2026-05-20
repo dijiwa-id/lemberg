@@ -119,11 +119,10 @@ export function Footer({ config }: FooterProps) {
                     Journal
                   </Link>
                 </li>
-                <li>
-                  <Link to="/admin" className="link-underline">
-                    Studio
-                  </Link>
-                </li>
+                {/* The /admin "Studio" link was removed from the public
+                    footer — exposing the CMS path on every public page
+                    invites bot scanning + targeted credential stuffing.
+                    Editors reach the studio by typing /admin directly. */}
               </ul>
             </div>
           </div>

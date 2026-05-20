@@ -29,6 +29,7 @@ class WineBase(BaseModel):
     vintage: Optional[str] = None
     varietal: Optional[str] = None
     region: Optional[str] = None
+    category: Optional[str] = None
     alcohol: Optional[str] = None
     description: Optional[str] = None
     tastingNotes: Optional[str] = None
@@ -52,6 +53,7 @@ class WineUpdate(BaseModel):
     vintage: Optional[str] = None
     varietal: Optional[str] = None
     region: Optional[str] = None
+    category: Optional[str] = None
     alcohol: Optional[str] = None
     description: Optional[str] = None
     tastingNotes: Optional[str] = None
@@ -128,6 +130,7 @@ class ReservationCreate(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
+    event_type: Optional[str] = None
     party_size: Optional[int] = 2
     visit_date: str   # YYYY-MM-DD
     visit_time: str   # HH:MM
@@ -139,6 +142,7 @@ class ReservationUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    event_type: Optional[str] = None
     party_size: Optional[int] = None
     visit_date: Optional[str] = None
     visit_time: Optional[str] = None
@@ -197,6 +201,7 @@ class ReservationResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
+    event_type: Optional[str] = None
     party_size: Optional[int] = 2
     visit_date: str
     visit_time: str

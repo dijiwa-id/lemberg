@@ -233,6 +233,72 @@ function ContentTab({ ctx }: { ctx: AdminContext }) {
             </div>
           </Card>
         </div>
+
+        {/* ── Reservation page (CMS) ───────────────────────── */}
+        <div className="mt-6">
+          <Card
+            title="Reservation page copy"
+            description="Wording on the public /reservation page — the eyebrow, headline, supporting paragraph, and the success message visitors see after submitting."
+          >
+            <div className="grid gap-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <TextField
+                  label="Eyebrow"
+                  value={config.reservationEyebrow || ""}
+                  onChange={(v) => update({ reservationEyebrow: v })}
+                  placeholder="Reserve a tasting"
+                />
+                <TextField
+                  label="Italic accent line"
+                  value={config.reservationHeadingItalic || ""}
+                  onChange={(v) => update({ reservationHeadingItalic: v })}
+                  placeholder="to the estate."
+                  hint="Rendered in italic pearl below the heading. Leave blank for a single-line heading."
+                />
+              </div>
+              <TextField
+                label="Heading"
+                value={config.reservationHeading || ""}
+                onChange={(v) => update({ reservationHeading: v })}
+                placeholder="Plan your visit"
+              />
+              <TextField
+                label="Intro paragraph"
+                multiline
+                rows={3}
+                value={config.reservationBody || ""}
+                onChange={(v) => update({ reservationBody: v })}
+                placeholder="Private tastings by appointment, Tuesday to Saturday…"
+              />
+              <TextField
+                label="Success heading"
+                value={config.reservationSuccessHeading || ""}
+                onChange={(v) => update({ reservationSuccessHeading: v })}
+                placeholder="Thank you — see you soon."
+                hint="Shown to visitors after their reservation lands."
+              />
+            </div>
+          </Card>
+        </div>
+
+        <div className="mt-6">
+          <Card
+            title="Event inquiry options"
+            description="Dropdown values shown at the top of the reservation form. One option per line. Leave the field empty to hide the dropdown entirely (visitors only fill out contact + visit details)."
+          >
+            <TextField
+              label="Event types"
+              multiline
+              rows={7}
+              value={config.reservationEventTypes || ""}
+              onChange={(v) => update({ reservationEventTypes: v })}
+              placeholder={
+                "Weddings\nCorporate events\nWine tastings\nPrivate functions\nFarm experiences\nHospitality events"
+              }
+              hint="Each non-blank line becomes one dropdown option. Reordering changes the order visitors see."
+            />
+          </Card>
+        </div>
       </div>
 
       <div className="lg:col-span-1">

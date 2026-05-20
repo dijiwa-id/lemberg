@@ -5,16 +5,19 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
   Calendar,
+  ChevronDown,
   Clock,
   Users,
   Mail,
   Phone,
+  Sparkles,
   User as UserIcon,
   MapPin,
   Check,
   AlertTriangle,
 } from "lucide-react";
 import { Nav } from "../components/Nav";
+import { AgeGate } from "../components/AgeGate";
 import { Footer } from "../components/sections/Footer";
 import { Reveal, RevealLines } from "../components/motion/Reveal";
 import {
@@ -22,6 +25,7 @@ import {
   FALLBACK_MENU,
   configFlag,
   mergeRemoteConfig,
+  parseEventTypes,
   type MenuItemNode,
   type Reservation,
   type SiteConfig,
@@ -64,6 +68,7 @@ export default function ReservationPage() {
     nextOpenDate().toISOString().slice(0, 10);
   const wineSlug = params.get("wine") || "";
 
+  const [eventType, setEventType] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -138,13 +143,39 @@ export default function ReservationPage() {
     ? ({ "--color-pearl-300": config.brandAccent } as CSSProperties)
     : {};
 
-  const errors = useMemo(() => validateForm({ name, email, visitDate, visitTime, partySize }), [
-    name,
-    email,
-    visitDate,
-    visitTime,
-    partySize,
-  ]);
+  // Event taxonomy comes from the CMS — editors can add/remove entries
+  // without redeploying. Default selection seeds the first option once
+  // we know the live list (also handles the SSR / cache → live config
+  // transition cleanly: if the cache had a different list, the seed
+  // re-runs as soon as the live config arrives).
+  const eventTypes = useMemo(
+    () => parseEventTypes(config.reservationEventTypes),
+    [config.reservationEventTypes]
+  );
+  useEffect(() => {
+    if (!eventType && eventTypes.length > 0) {
+      // Prefer "Wine tastings" if present (most-common public choice),
+      // otherwise fall back to the first option in the editor's list.
+      const preferred =
+        eventTypes.find((t) => t.toLowerCase().includes("wine tasting")) ||
+        eventTypes[0];
+      setEventType(preferred);
+    }
+  }, [eventTypes, eventType]);
+
+  const errors = useMemo(
+    () =>
+      validateForm({
+        eventType,
+        name,
+        email,
+        visitDate,
+        visitTime,
+        partySize,
+        knownEventTypes: eventTypes,
+      }),
+    [eventType, name, email, visitDate, visitTime, partySize, eventTypes]
+  );
   const isValid = Object.keys(errors).length === 0;
 
   async function handleSubmit(e: FormEvent) {
@@ -158,6 +189,7 @@ export default function ReservationPage() {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
+        event_type: eventType.trim() || undefined,
         party_size: partySize,
         visit_date: visitDate,
         visit_time: visitTime,
@@ -190,6 +222,7 @@ export default function ReservationPage() {
         Skip to content
       </a>
 
+      <AgeGate config={config} />
       <Nav config={config} menu={menu} showAnnouncementBar={showAnnouncementBar} />
 
       <main id="main" className="mx-auto max-w-[1200px] px-6 pt-44 pb-32 md:px-10 md:pt-52 md:pb-32">
@@ -227,35 +260,84 @@ export default function ReservationPage() {
                     <div className="mb-8 flex items-center gap-4">
                       <span className="block h-px w-10 bg-[var(--color-pearl-300)]/60" />
                       <span className="label-eyebrow text-[var(--color-bone-400)]">
-                        Reserve a tasting
+                        {config.reservationEyebrow || "Reserve a tasting"}
                       </span>
                     </div>
                   </Reveal>
                   <h1 className="font-display text-[clamp(2.4rem,5.2vw,4.8rem)] font-light leading-[1] tracking-[-0.015em] text-[var(--color-bone-50)]">
-                    <RevealLines text="Plan your visit" />
-                    <RevealLines
-                      text="to the estate."
-                      italicLines={[0]}
-                      delay={0.18}
-                      className="text-[var(--color-pearl-300)]"
-                    />
+                    <RevealLines text={config.reservationHeading || "Plan your visit"} />
+                    {config.reservationHeadingItalic && (
+                      <RevealLines
+                        text={config.reservationHeadingItalic}
+                        italicLines={[0]}
+                        delay={0.18}
+                        className="text-[var(--color-pearl-300)]"
+                      />
+                    )}
                   </h1>
                   <Reveal y={14} delay={0.3} className="mt-8 max-w-md">
                     <p className="body-editorial text-[var(--color-bone-300)]">
-                      Private tastings by appointment, Tuesday to Saturday. Tell us
-                      who is joining and which afternoon suits — we'll write back
-                      within a working day to confirm.
+                      {config.reservationBody}
                     </p>
                   </Reveal>
                 </header>
 
                 <form onSubmit={handleSubmit} noValidate className="space-y-12">
-                  {/* Group 1: Your details */}
-                  <Reveal y={14} delay={0.1}>
+                  {/* Group 1: Event inquiry — what kind of visit + dropdown */}
+                  {eventTypes.length > 0 && (
+                    <Reveal y={14} delay={0.08}>
+                      <FieldGroup
+                        step="01"
+                        title="Event inquiry"
+                        description="Tell us what brings you to the estate — wedding, corporate gathering, private tasting, or something else."
+                      >
+                        <FormField
+                          label="What kind of event?"
+                          icon={Sparkles}
+                          required
+                          error={touched ? errors.eventType : undefined}
+                        >
+                          <div className="relative">
+                            <select
+                              value={eventType}
+                              onChange={(e) => setEventType(e.target.value)}
+                              onBlur={() => setTouched(true)}
+                              className={cn(
+                                inputClass,
+                                "appearance-none cursor-pointer pr-12"
+                              )}
+                            >
+                              <option value="" className="bg-[var(--color-ink-900)]">
+                                Select an event type…
+                              </option>
+                              {eventTypes.map((t) => (
+                                <option
+                                  key={t}
+                                  value={t}
+                                  className="bg-[var(--color-ink-900)]"
+                                >
+                                  {t}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown
+                              size={14}
+                              strokeWidth={1.5}
+                              aria-hidden
+                              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-bone-400)]"
+                            />
+                          </div>
+                        </FormField>
+                      </FieldGroup>
+                    </Reveal>
+                  )}
+
+                  {/* Group 2: Contact details */}
+                  <Reveal y={14} delay={0.16}>
                     <FieldGroup
-                      step="01"
-                      title="Your details"
-                      description="Who's coming and how we should reach you."
+                      step={eventTypes.length > 0 ? "02" : "01"}
+                      title="Contact details"
+                      description="Who's coming and how we should reach you to confirm the booking."
                     >
                       <div className="grid gap-6 md:grid-cols-2">
                         <FormField
@@ -271,6 +353,7 @@ export default function ReservationPage() {
                             onBlur={() => setTouched(true)}
                             placeholder="e.g. Carla van Wyk"
                             className={inputClass}
+                            autoComplete="name"
                           />
                         </FormField>
 
@@ -287,16 +370,18 @@ export default function ReservationPage() {
                             onBlur={() => setTouched(true)}
                             placeholder="name@example.com"
                             className={inputClass}
+                            autoComplete="email"
                           />
                         </FormField>
 
-                        <FormField label="Phone (optional)" icon={Phone}>
+                        <FormField label="Phone" icon={Phone}>
                           <input
                             type="tel"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                             placeholder="+27 23 …"
                             className={inputClass}
+                            autoComplete="tel"
                           />
                         </FormField>
 
@@ -324,10 +409,10 @@ export default function ReservationPage() {
                     </FieldGroup>
                   </Reveal>
 
-                  {/* Group 2: Visit details */}
-                  <Reveal y={14} delay={0.18}>
+                  {/* Group 3: Visit details */}
+                  <Reveal y={14} delay={0.24}>
                     <FieldGroup
-                      step="02"
+                      step={eventTypes.length > 0 ? "03" : "02"}
                       title="Visit details"
                       description="Pick a date and time — Tue to Sat, 10:00 to 16:00."
                     >
@@ -372,10 +457,10 @@ export default function ReservationPage() {
                     </FieldGroup>
                   </Reveal>
 
-                  {/* Group 3: Anything else */}
-                  <Reveal y={14} delay={0.26}>
+                  {/* Group 4: Anything else */}
+                  <Reveal y={14} delay={0.32}>
                     <FieldGroup
-                      step="03"
+                      step={eventTypes.length > 0 ? "04" : "03"}
                       title="Anything else?"
                       description="Allergies, accessibility needs, a wine you'd like to taste — anything we should know."
                     >
@@ -591,11 +676,17 @@ function SuccessPanel({
       </div>
 
       <h1 className="mt-8 font-display text-[clamp(2.4rem,5.2vw,4.5rem)] font-light italic leading-[1] tracking-[-0.015em] text-[var(--color-pearl-300)]">
-        Thank you — see you soon.
+        {config.reservationSuccessHeading || "Thank you — see you soon."}
       </h1>
 
       <p className="mt-8 max-w-lg body-editorial text-[var(--color-bone-300)]">
-        We've recorded your request for <strong className="text-[var(--color-bone-100)]">{reservation.party_size}</strong>{" "}
+        We've recorded your{" "}
+        {reservation.event_type ? (
+          <strong className="text-[var(--color-bone-100)]">{reservation.event_type.toLowerCase()}</strong>
+        ) : (
+          "tasting"
+        )}{" "}
+        request for <strong className="text-[var(--color-bone-100)]">{reservation.party_size}</strong>{" "}
         on <strong className="text-[var(--color-bone-100)]">{dateLabel}</strong> at{" "}
         <strong className="text-[var(--color-bone-100)]">{reservation.visit_time}</strong>. A
         short confirmation will follow at{" "}
@@ -609,9 +700,11 @@ function SuccessPanel({
           <dd className="mt-2 font-mono text-base text-[var(--color-bone-100)]">{ref}</dd>
         </div>
         <div>
-          <dt className="label-eyebrow text-[var(--color-bone-500)]">Status</dt>
+          <dt className="label-eyebrow text-[var(--color-bone-500)]">
+            {reservation.event_type ? "Event" : "Status"}
+          </dt>
           <dd className="mt-2 text-sm text-[var(--color-bone-100)]">
-            Awaiting confirmation
+            {reservation.event_type || "Awaiting confirmation"}
           </dd>
         </div>
         <div>
@@ -654,19 +747,29 @@ function nextOpenDate(): Date {
 }
 
 function validateForm({
+  eventType,
   name,
   email,
   visitDate,
   visitTime,
   partySize,
+  knownEventTypes,
 }: {
+  eventType: string;
   name: string;
   email: string;
   visitDate: string;
   visitTime: string;
   partySize: number;
+  /** Skip the event-type required check entirely if the editor hasn't
+   *  defined any options yet — visitors shouldn't be blocked by an empty
+   *  taxonomy. */
+  knownEventTypes: string[];
 }): Record<string, string> {
   const errs: Record<string, string> = {};
+  if (knownEventTypes.length > 0 && !eventType.trim()) {
+    errs.eventType = "Required";
+  }
   if (!name.trim() || name.trim().length < 2) errs.name = "Required";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Invalid email";
   if (!visitDate) errs.visitDate = "Required";
