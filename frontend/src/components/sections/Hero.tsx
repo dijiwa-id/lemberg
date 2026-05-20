@@ -562,6 +562,10 @@ function SliderImage({
   reduced,
   className,
 }: SliderImageProps) {
+  // Only the first slide in the slider (index 0) gets high priority for LCP.
+  // Note: this assumes the first slide is what the user sees first.
+  const isPriority = index === 0;
+
   // Reduced-motion path — no transitions, just snap to the current slide.
   if (reduced) {
     return (
@@ -569,8 +573,9 @@ function SliderImage({
         <img
           src={resolveAsset(slide.image)}
           alt=""
-          loading="eager"
-          fetchPriority="high"
+          loading={isPriority ? "eager" : "lazy"}
+          fetchPriority={isPriority ? "high" : "auto"}
+          decoding={isPriority ? "sync" : "async"}
           className="h-full w-full object-cover"
         />
       </div>
@@ -589,8 +594,9 @@ function SliderImage({
           key={`hero-${index}`}
           src={resolveAsset(slide.image)}
           alt=""
-          loading="eager"
-          fetchPriority="high"
+          loading={isPriority ? "eager" : "lazy"}
+          fetchPriority={isPriority ? "high" : "auto"}
+          decoding={isPriority ? "sync" : "async"}
           {...imageMotion(animation, direction, intervalS)}
           className="absolute inset-0 h-full w-full object-cover"
         />

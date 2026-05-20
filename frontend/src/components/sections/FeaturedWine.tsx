@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, useInView } from "motion/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ImageOff } from "lucide-react";
 import type { SiteConfig, Wine } from "../../lib/types";
 import { currencySymbol, wineDefaultImage } from "../../lib/types";
@@ -268,7 +268,9 @@ interface PrimarySlotProps {
 }
 
 function PrimarySlot({ src, alt, y, placement, mobileAspect }: PrimarySlotProps) {
+  const [loaded, setLoaded] = useState(false);
   const hasSrc = Boolean(src && src.trim());
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -277,6 +279,7 @@ function PrimarySlot({ src, alt, y, placement, mobileAspect }: PrimarySlotProps)
       transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "relative flex items-center justify-center overflow-hidden",
+        !loaded && hasSrc && "animate-pulse",
         mobileAspect,
         placement
       )}
@@ -289,7 +292,12 @@ function PrimarySlot({ src, alt, y, placement, mobileAspect }: PrimarySlotProps)
           src={resolveAsset(src)}
           alt={alt}
           loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
           style={{ y }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: loaded ? 1 : 0 }}
+          transition={{ duration: 0.6 }}
           className="relative z-10 h-[88%] w-[88%] object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.6)]"
         />
       ) : (
@@ -324,6 +332,7 @@ function AccentSlot({
 }: AccentSlotProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.2 });
+  const [loaded, setLoaded] = useState(false);
   const hasSrc = Boolean(src && src.trim());
 
   return (
@@ -331,6 +340,7 @@ function AccentSlot({
       ref={ref}
       className={cn(
         "group relative overflow-hidden border border-[var(--border-subtle)] bg-[var(--color-ink-850)] aspect-square",
+        !loaded && hasSrc && "animate-pulse",
         placement
       )}
     >
@@ -346,9 +356,16 @@ function AccentSlot({
             alt={alt}
             loading="lazy"
             decoding="async"
-            initial={{ scale: 1.08 }}
-            whileInView={{ scale: 1.0 }}
-            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay }}
+            onLoad={() => setLoaded(true)}
+            initial={{ scale: 1.08, opacity: 0 }}
+            whileInView={{
+              scale: 1.0,
+              opacity: loaded ? 1 : 0,
+            }}
+            transition={{
+              scale: { duration: 1.4, ease: [0.22, 1, 0.36, 1], delay },
+              opacity: { duration: 0.5 },
+            }}
             className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105"
           />
         </motion.div>

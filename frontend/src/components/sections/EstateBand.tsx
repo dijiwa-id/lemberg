@@ -1,8 +1,9 @@
 import { motion, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { SiteConfig } from "../../lib/types";
 import { resolveAsset } from "../../services/api";
 import { Reveal, RevealLines } from "../motion/Reveal";
+import { cn } from "../../lib/utils";
 
 interface EstateBandProps {
   config: SiteConfig;
@@ -17,6 +18,8 @@ export function EstateBand({ config }: EstateBandProps) {
   const y = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
   const scale = useTransform(scrollYProgress, [0, 1], [1.1, 1.0]);
 
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <section
       ref={ref}
@@ -24,11 +27,22 @@ export function EstateBand({ config }: EstateBandProps) {
       data-theme="dark"
       className="relative h-[90vh] min-h-[600px] overflow-hidden border-t border-[var(--border-subtle)] bg-[var(--color-ink-950)]"
     >
-      <motion.div className="absolute inset-0" style={{ y, scale }}>
-        <img
+      <motion.div
+        className={cn(
+          "absolute inset-0 bg-[var(--color-ink-900)]",
+          !loaded && "animate-pulse"
+        )}
+        style={{ y, scale }}
+      >
+        <motion.img
           src={resolveAsset(config.estateImage)}
           alt="Tulbagh valley"
           loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: loaded ? 1 : 0 }}
+          transition={{ duration: 0.8 }}
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[rgba(7,7,10,0.35)] via-transparent to-[rgba(7,7,10,0.85)]" />

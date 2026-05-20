@@ -43,6 +43,7 @@ export function ImageReveal({
   const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
   const scale = useTransform(scrollYProgress, [0, 1], [1.08, 1.02]);
 
+  const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const hasSrc = Boolean(src && src.trim());
 
@@ -51,6 +52,7 @@ export function ImageReveal({
       ref={ref}
       className={cn(
         "relative overflow-hidden bg-[var(--color-ink-850)]",
+        !loaded && !errored && hasSrc && "animate-pulse",
         aspectClass,
         className
       )}
@@ -70,8 +72,12 @@ export function ImageReveal({
             src={src}
             alt={alt}
             loading={priority ? "eager" : "lazy"}
-            decoding="async"
+            decoding={priority ? "sync" : "async"}
+            onLoad={() => setLoaded(true)}
             onError={() => setErrored(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: loaded ? 1 : 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             style={parallax ? { y, scale } : undefined}
             className="h-full w-full object-cover"
           />

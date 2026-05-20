@@ -729,50 +729,15 @@ function CompactList({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
       <PagedGrid pageKey={page}>
         <div className="divide-y divide-[var(--border-subtle)]">
           {pageItems.map((wine, i) => (
-            <Reveal key={wine.id} y={20} delay={(i % 4) * 0.05}>
-          <button
-            type="button"
-            onClick={() => onOpenWine?.(wine)}
-            className="group grid w-full grid-cols-[80px_1fr_auto] items-center gap-5 py-5 text-left transition-colors hover:bg-[var(--color-ink-800)]/40 sm:grid-cols-[120px_1fr_auto_auto] sm:gap-8 sm:py-8"
-          >
-            <div className="aspect-[3/4] overflow-hidden bg-[var(--color-ink-800)]">
-              <img
-                src={resolveAsset(wineDefaultImage(wine))}
-                alt={wine.name}
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-3">
-                <h3 className="font-display text-xl font-light tracking-[-0.005em] text-[var(--color-bone-50)] sm:text-2xl">
-                  {wine.name}
-                </h3>
-                {wine.vintage && (
-                  <span className="label-eyebrow text-[var(--color-pearl-300)]">
-                    {wine.vintage}
-                  </span>
-                )}
-              </div>
-              {wine.varietal && (
-                <p className="mt-1 body-editorial !text-[13px] text-[var(--color-bone-400)] line-clamp-1">
-                  {wine.varietal}
-                  {wine.region && (
-                    <span className="text-[var(--color-bone-500)]"> · {wine.region}</span>
-                  )}
-                </p>
-              )}
-            </div>
-            <span className="hidden label-eyebrow text-[var(--color-bone-200)]/80 sm:inline">
-              {(wine.status || "available").toString().replace("-", " ")}
-            </span>
-            <span className="label-meta whitespace-nowrap text-[var(--color-bone-300)]">
-              {wine.price ? `${symbol}${wine.price.toFixed(0)}` : "Enquire"}
-            </span>
-          </button>
-        </Reveal>
-      ))}
-    </div>
+            <CompactRow
+              key={wine.id}
+              wine={wine}
+              symbol={symbol}
+              delay={(i % 4) * 0.05}
+              onOpen={() => onOpenWine?.(wine)}
+            />
+          ))}
+        </div>
       </PagedGrid>
       <Pagination
         page={page}
@@ -786,6 +751,74 @@ function CompactList({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
   );
 }
 
+function CompactRow({
+  wine,
+  symbol,
+  delay,
+  onOpen,
+}: {
+  wine: Wine;
+  symbol: string;
+  delay: number;
+  onOpen: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <Reveal y={20} delay={delay}>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group grid w-full grid-cols-[80px_1fr_auto] items-center gap-5 py-5 text-left transition-colors hover:bg-[var(--color-ink-800)]/40 sm:grid-cols-[120px_1fr_auto_auto] sm:gap-8 sm:py-8"
+      >
+        <div
+          className={cn(
+            "aspect-[3/4] overflow-hidden bg-[var(--color-ink-800)]",
+            !loaded && "animate-pulse"
+          )}
+        >
+          <motion.img
+            src={resolveAsset(wineDefaultImage(wine))}
+            alt={wine.name}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: loaded ? 1 : 0 }}
+            transition={{ duration: 0.4 }}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-3">
+            <h3 className="font-display text-xl font-light tracking-[-0.005em] text-[var(--color-bone-50)] sm:text-2xl">
+              {wine.name}
+            </h3>
+            {wine.vintage && (
+              <span className="label-eyebrow text-[var(--color-pearl-300)]">
+                {wine.vintage}
+              </span>
+            )}
+          </div>
+          {wine.varietal && (
+            <p className="mt-1 body-editorial !text-[13px] text-[var(--color-bone-400)] line-clamp-1">
+              {wine.varietal}
+              {wine.region && <span className="text-[var(--color-bone-500)]"> · {wine.region}</span>}
+            </p>
+          )}
+        </div>
+        <span className="hidden label-eyebrow text-[var(--color-bone-200)]/80 sm:inline">
+          {(wine.status || "available").toString().replace("-", " ")}
+        </span>
+        <span className="label-meta whitespace-nowrap text-[var(--color-bone-300)]">
+          {wine.price ? `${symbol}${wine.price.toFixed(0)}` : "Enquire"}
+        </span>
+      </button>
+    </Reveal>
+  );
+}
+
+
 /* ─────────────────────────────────────────────────────────────────────
  * Layout 4 — Mosaic (hero + supporting cards)
  *
@@ -796,6 +829,7 @@ function CompactList({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
 
 function MosaicGrid({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
   const [hovered, setHovered] = useState<number | string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const {
     page,
     setPage,
@@ -822,13 +856,27 @@ function MosaicGrid({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
           onClick={() => onOpenWine?.(hero)}
           className="group flex h-full w-full flex-col text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-pearl-300)]"
         >
-          <div className="relative aspect-[4/5] overflow-hidden bg-[var(--color-ink-800)] lg:aspect-[5/6]">
+          <div
+            className={cn(
+              "relative aspect-[4/5] overflow-hidden bg-[var(--color-ink-800)] lg:aspect-[5/6]",
+              !loaded && "animate-pulse"
+            )}
+          >
             <motion.img
               src={resolveAsset(wineDefaultImage(hero))}
               alt={hero.name}
               loading="lazy"
-              animate={{ scale: hovered === hero.id ? 1.04 : 1.0 }}
-              transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+              decoding="async"
+              onLoad={() => setLoaded(true)}
+              initial={{ opacity: 0 }}
+              animate={{
+                scale: hovered === hero.id ? 1.04 : 1.0,
+                opacity: loaded ? 1 : 0,
+              }}
+              transition={{
+                scale: { duration: 1.6, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.5 },
+              }}
               className="absolute inset-0 h-full w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[rgba(7,7,10,0.85)] via-[rgba(7,7,10,0.4)] to-transparent p-8 pt-24">
@@ -895,6 +943,8 @@ interface WineCardProps {
 }
 
 function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardProps) {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <button
       type="button"
@@ -904,14 +954,28 @@ function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardP
       aria-label={`View ${wine.name}${wine.vintage ? " " + wine.vintage : ""} details`}
       className="flex h-full flex-col text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-pearl-300)]"
     >
-      <div className="relative aspect-[4/5] overflow-hidden bg-[var(--color-ink-800)]">
+      <div
+        className={cn(
+          "relative aspect-[4/5] overflow-hidden bg-[var(--color-ink-800)]",
+          !loaded && "animate-pulse"
+        )}
+      >
         <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_55%,_rgba(7,7,10,0.55)_100%)]" />
         <motion.img
           src={resolveAsset(wineDefaultImage(wine))}
           alt={wine.name}
           loading="lazy"
-          animate={{ scale: hovered ? 1.06 : 1.0 }}
-          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          initial={{ opacity: 0 }}
+          animate={{
+            scale: hovered ? 1.06 : 1.0,
+            opacity: loaded ? 1 : 0,
+          }}
+          transition={{
+            scale: { duration: 1.6, ease: [0.22, 1, 0.36, 1] },
+            opacity: { duration: 0.5 },
+          }}
           className="absolute inset-0 h-full w-full object-cover"
         />
         <motion.div
