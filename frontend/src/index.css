@@ -124,7 +124,8 @@
   --hero-overlay-top: rgba(245, 242, 235, 0.0);
   --hero-overlay-mid: rgba(245, 242, 235, 0.0);
   --hero-overlay-bottom: var(--color-ink-900);
-  --hero-vignette: rgba(245, 242, 235, 0.45);
+  --hero-vignette: rgba(107, 31, 38, 0.12);
+  --vignette-overlay: rgba(107, 31, 38, 0.18);
 
   color-scheme: light;
 }
@@ -327,12 +328,13 @@
     text-decoration: line-through;
   }
 
-  /* Cinematic vignette */
+  /* Color grading overlay (formerly vignette) */
   .vignette::after {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(7,7,10,0.55) 100%);
+    background: var(--vignette-overlay);
+    mix-blend-mode: multiply;
   }
 }

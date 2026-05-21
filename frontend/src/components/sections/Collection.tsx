@@ -879,7 +879,7 @@ function MosaicGrid({ wines, symbol, pageSize = 9, onOpenWine }: LayoutProps) {
               }}
               className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[rgba(7,7,10,0.85)] via-[rgba(7,7,10,0.4)] to-transparent p-8 pt-24">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[var(--hero-overlay-bottom)] via-[var(--hero-overlay-mid)] to-transparent p-8 pt-24">
               <span className="label-eyebrow text-[var(--color-pearl-300)]">
                 Featured release
               </span>
@@ -960,7 +960,7 @@ function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardP
           !loaded && "animate-pulse"
         )}
       >
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_55%,_rgba(7,7,10,0.55)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 mix-blend-multiply bg-[var(--vignette-overlay)]" />
         <motion.img
           src={resolveAsset(wineDefaultImage(wine))}
           alt={wine.name}
