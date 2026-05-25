@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { FileEdit, ClipboardList } from "lucide-react";
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { ImageField, TextField } from "../../components/admin/Field";
+import { ImageField, TextField, RichTextField, ListField } from "../../components/admin/Field";
 import { ReservationsList } from "../../components/admin/ReservationsList";
 import { fetchReservations } from "../../services/api";
 import { cn } from "../../lib/utils";
@@ -12,6 +12,7 @@ import type { AdminContext } from "../Admin";
 type ExperienceTab = "content" | "reservations";
 
 export function ExperiencePage({ ctx }: { ctx: AdminContext }) {
+  const { config, loading } = ctx;
   const [params, setParams] = useSearchParams();
   const initialTab = (params.get("tab") as ExperienceTab) === "reservations"
     ? "reservations"
@@ -55,6 +56,14 @@ export function ExperiencePage({ ctx }: { ctx: AdminContext }) {
     (c: { total: number; new: number }) => setCounts(c),
     []
   );
+
+  if (loading || !config) {
+    return (
+      <div className="flex h-[40vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-pearl-300)] border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -171,35 +180,34 @@ function ContentTab({ ctx }: { ctx: AdminContext }) {
               onChange={(v) => update({ experienceItalic: v })}
               placeholder="Savour the depth."
             />
-            <TextField
+            <RichTextField
               label="Body"
-              multiline
-              rows={4}
               value={config.experienceBody || ""}
               onChange={(v) => update({ experienceBody: v })}
             />
           </div>
         </Card>
 
-        <div className="mt-6">
           <Card
             title="Visit facts"
-            description="Three small label/value pairs that sit above the booking button. Clear a value to hide that row."
+            description="Details shown above the booking button. Use the Hours list to add multiple opening times (e.g. per day)."
           >
-            <div className="grid gap-5 md:grid-cols-2">
-              <TextField
+            <div className="grid gap-8">
+              <ListField
                 label="Hours"
                 value={config.experienceHours || ""}
                 onChange={(v) => update({ experienceHours: v })}
                 placeholder="Tue–Sat · 10:00 — 16:00"
+                hint="Add multiple rows to show complex opening times. Empty rows are ignored."
               />
-              <TextField
-                label="Tasting"
-                value={config.experienceTasting || ""}
-                onChange={(v) => update({ experienceTasting: v })}
-                placeholder="6 wines · 75 min"
-              />
-              <div className="md:col-span-2">
+              
+              <div className="grid gap-5 md:grid-cols-2">
+                <TextField
+                  label="Tasting"
+                  value={config.experienceTasting || ""}
+                  onChange={(v) => update({ experienceTasting: v })}
+                  placeholder="6 wines · 75 min"
+                />
                 <TextField
                   label="Booking"
                   value={config.experienceBooking || ""}
@@ -209,7 +217,6 @@ function ContentTab({ ctx }: { ctx: AdminContext }) {
               </div>
             </div>
           </Card>
-        </div>
 
         <div className="mt-6">
           <Card
@@ -262,10 +269,8 @@ function ContentTab({ ctx }: { ctx: AdminContext }) {
                 onChange={(v) => update({ reservationHeading: v })}
                 placeholder="Plan your visit"
               />
-              <TextField
+              <RichTextField
                 label="Intro paragraph"
-                multiline
-                rows={3}
                 value={config.reservationBody || ""}
                 onChange={(v) => update({ reservationBody: v })}
                 placeholder="Private tastings by appointment, Tuesday to Saturday…"

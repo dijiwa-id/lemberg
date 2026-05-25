@@ -22,6 +22,7 @@ import type { AdminContext } from "../Admin";
 
 const QUICK_LINKS = [
   { to: "/admin/hero", icon: ImageIcon, label: "Hero", desc: "Opening frame & headline" },
+  { to: "/admin/ribbon", icon: BookOpen, label: "Ribbon", desc: "Marquee text or image" },
   { to: "/admin/collection", icon: WineIcon, label: "Wine collection", desc: "Library, reorder, status" },
   { to: "/admin/featured", icon: Star, label: "Featured wine", desc: "Flagship showcase" },
   { to: "/admin/philosophy", icon: BookOpen, label: "Philosophy", desc: "Estate story" },

@@ -8,10 +8,11 @@ from typing import Dict, List
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.api.utils import log_action
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.models import Config, User, Wine
-from app.schemas.schemas import WineCreate, WineResponse, WineUpdate
+from app.schemas.schemas import WineCreate, WineResponse, WineUpdate, ReorderRequest
 
 logger = logging.getLogger("lemberg.cms")
 
@@ -31,18 +32,19 @@ def read_config(db: Session = Depends(get_db)):
 
 # Hard cap on individual config values — prevents memory/disk abuse.
 CONFIG_KEY_MAX = 64
-CONFIG_VALUE_MAX = 8000
+CONFIG_VALUE_MAX = 64000
 
 
 @router.put("/config")
 def update_config(
     config_data: dict,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     if not isinstance(config_data, dict):
         raise HTTPException(status_code=400, detail="Body must be a JSON object.")
 
+    keys_changed = []
     for key, value in config_data.items():
         if not isinstance(key, str) or len(key) > CONFIG_KEY_MAX:
             raise HTTPException(
@@ -61,6 +63,10 @@ def update_config(
             db_config.value = coerced
         else:
             db.add(Config(key=key, value=coerced))
+        keys_changed.append(key)
+    
+    log_action(db, user.username, "UPDATE", "config", None, f"Updated keys: {', '.join(keys_changed[:10])}{'...' if len(keys_changed) > 10 else ''}")
+    
     db.commit()
     return config_data
 
@@ -75,12 +81,19 @@ def read_wines(db: Session = Depends(get_db)):
 def create_wine(
     wine: WineCreate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
-    db_wine = Wine(**wine.model_dump(exclude_unset=False))
+    wine_data = wine.model_dump(exclude_unset=False)
+    if wine_data.get("stock") is not None and wine_data["stock"] <= 0:
+        wine_data["status"] = "sold-out"
+    db_wine = Wine(**wine_data)
     db.add(db_wine)
     db.commit()
     db.refresh(db_wine)
+    
+    log_action(db, user.username, "CREATE", "wine", str(db_wine.id), f"Created wine: {db_wine.name}")
+    db.commit()
+    
     return db_wine
 
 
@@ -89,28 +102,72 @@ def update_wine(
     wine_id: int,
     wine: WineUpdate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     db_wine = db.query(Wine).filter(Wine.id == wine_id).first()
     if not db_wine:
         raise HTTPException(status_code=404, detail="Wine not found")
-    for key, value in wine.model_dump(exclude_unset=True).items():
+        
+    update_data = wine.model_dump(exclude_unset=True)
+    
+    # Auto-manage stock status
+    if "stock" in update_data:
+        stock_val = update_data["stock"]
+        if stock_val is not None and stock_val <= 0:
+            update_data["status"] = "sold-out"
+        elif stock_val is not None and stock_val > 0 and db_wine.status == "sold-out":
+            # If stock is added back to a sold-out wine, make it available again
+            # Only override if the user didn't explicitly send a new status
+            if "status" not in update_data or update_data["status"] == "sold-out":
+                update_data["status"] = "available"
+                
+    for key, value in update_data.items():
         setattr(db_wine, key, value)
+        
+    log_action(db, user.username, "UPDATE", "wine", str(wine_id), f"Updated fields: {list(update_data.keys())}")
+    
     db.commit()
     db.refresh(db_wine)
     return db_wine
+
+
+@router.put("/wines/reorder")
+def reorder_wines(
+    req: ReorderRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Bulk reorder wines. Pass every affected wine ID with its new order index."""
+    ids = [e.id for e in req.items]
+    rows = db.query(Wine).filter(Wine.id.in_(ids)).all()
+    by_id = {r.id: r for r in rows}
+    
+    for entry in req.items:
+        row = by_id.get(entry.id)
+        if row:
+            row.order = entry.order
+            
+    log_action(db, user.username, "UPDATE", "wine", "reorder", f"Bulk reordered {len(rows)} wines.")
+    
+    db.commit()
+    return {"success": True, "count": len(rows)}
 
 
 @router.delete("/wines/{wine_id}")
 def delete_wine(
     wine_id: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     db_wine = db.query(Wine).filter(Wine.id == wine_id).first()
     if not db_wine:
         raise HTTPException(status_code=404, detail="Wine not found")
+    
+    wine_name = db_wine.name
     db.delete(db_wine)
+    
+    log_action(db, user.username, "DELETE", "wine", str(wine_id), f"Deleted wine: {wine_name}")
+    
     db.commit()
     return {"success": True}
 
@@ -148,7 +205,8 @@ def _sanitize_filename(raw: str | None) -> str:
 @router.post("/upload")
 def upload_file(
     file: UploadFile = File(...),
-    _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Accepts a single image file, persists it under /uploads, returns the URL.
 
@@ -207,5 +265,8 @@ def upload_file(
         raise HTTPException(status_code=500, detail="Could not save the upload.")
     finally:
         file.file.close()
+
+    log_action(db, user.username, "CREATE", "upload", filename, f"Uploaded file: {file.filename} ({written} bytes)")
+    db.commit()
 
     return {"url": f"/uploads/{filename}", "bytes": written}

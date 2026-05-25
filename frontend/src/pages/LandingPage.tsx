@@ -17,25 +17,13 @@ import { AgeGate } from "../components/AgeGate";
 import { MaintenancePage } from "../components/MaintenancePage";
 import {
   FALLBACK_CONFIG,
-  FALLBACK_MENU,
-  FALLBACK_WINES,
   configFlag,
   mergeRemoteConfig,
-  type MenuItemNode,
   type SiteConfig,
   type Wine,
 } from "../lib/types";
-import { fetchConfig, fetchMenu, fetchWines } from "../services/api";
 import { useDocumentMeta, useLandingTheme } from "../lib/useDocumentMeta";
-import { cacheBrand } from "../lib/brandCache";
-import {
-  readCachedConfig,
-  readCachedMenu,
-  readCachedWines,
-  writeCachedConfig,
-  writeCachedMenu,
-  writeCachedWines,
-} from "../lib/dataCache";
+import { useSiteData } from "../lib/useSiteData";
 
 interface LandingPageProps {
   previewConfig?: SiteConfig;
@@ -43,75 +31,36 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ previewConfig, previewWines }: LandingPageProps) {
-  // Initial state pulls from the persistent cache when available so a refresh
-  // doesn't briefly render the Unsplash defaults baked into FALLBACK_*.
-  // Preview mode (Studio) always wins — it passes live editor state.
+  const isPreview = Boolean(previewConfig);
+  const { config: remoteConfig, wines: remoteWines, menu: remoteMenu } = useSiteData(isPreview);
+
+  // Initial state pulls from remote if available, else falls back to preview props or defaults.
   const [config, setConfig] = useState<SiteConfig>(() => {
     if (previewConfig) return mergeRemoteConfig(previewConfig);
-    return readCachedConfig() || FALLBACK_CONFIG;
+    return remoteConfig;
   });
-  const [wines, setWines] = useState<Wine[]>(
-    () => previewWines || readCachedWines() || FALLBACK_WINES
-  );
-  const [menu, setMenu] = useState<MenuItemNode[]>(
-    () => readCachedMenu() || FALLBACK_MENU
-  );
+  const [wines, setWines] = useState<Wine[]>(() => previewWines || remoteWines);
+  const [menu, setMenu] = useState(remoteMenu);
+  
   const [activeWine, setActiveWine] = useState<Wine | null>(null);
   const location = useLocation();
 
-  // Live preview sync (Admin)
-  // Preview mode overrides
+  // Sync with remote data when it updates (non-preview mode)
+  useEffect(() => {
+    if (!isPreview) {
+      setConfig(remoteConfig);
+      setWines(remoteWines);
+      setMenu(remoteMenu);
+    }
+  }, [isPreview, remoteConfig, remoteWines, remoteMenu]);
+
+  // Sync with preview props when they update (preview mode)
   useEffect(() => {
     if (previewConfig) setConfig(mergeRemoteConfig(previewConfig));
   }, [previewConfig]);
   useEffect(() => {
     if (previewWines) setWines(previewWines);
   }, [previewWines]);
-
-  // Remote data (skip in preview mode). Each successful response is written
-  // to localStorage so the next refresh / new tab paints with the real data
-  // synchronously — no fallback-image flash during the API roundtrip.
-  useEffect(() => {
-    if (previewConfig) return;
-    fetchConfig()
-      .then((c) => {
-        if (c && Object.keys(c).length > 0) {
-          const merged = mergeRemoteConfig(c);
-          setConfig(merged);
-          writeCachedConfig(merged);
-          // Keep the splash-screen brand cache in sync with what the editor
-          // most recently published. Next page load shows the real wordmark.
-          cacheBrand(merged);
-        }
-      })
-      .catch(() => {});
-  }, [previewConfig]);
-
-  useEffect(() => {
-    if (previewWines) return;
-    fetchWines()
-      .then((w) => {
-        if (Array.isArray(w) && w.length > 0) {
-          const sorted = [...w].sort((a, b) => (a.order || 0) - (b.order || 0));
-          setWines(sorted);
-          writeCachedWines(sorted);
-        }
-      })
-      .catch(() => {});
-  }, [previewWines]);
-
-  // Menu tree (header nav) — same skip-in-preview pattern; preview uses fallback.
-  useEffect(() => {
-    if (previewConfig) return;
-    fetchMenu()
-      .then((m) => {
-        if (Array.isArray(m) && m.length > 0) {
-          setMenu(m);
-          writeCachedMenu(m);
-        }
-      })
-      .catch(() => {});
-  }, [previewConfig]);
 
   // Cross-page anchor scroll: when arriving from /page/* via /#section, the
   // browser may not scroll because the component has only just mounted.
@@ -124,15 +73,12 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
     return () => clearTimeout(t);
   }, [location.hash]);
 
-  const featuredWine = useMemo(() => {
-    if (!config.featuredWineId) return wines[0];
-    return (
-      wines.find((w) => String(w.id) === String(config.featuredWineId)) || wines[0]
-    );
-  }, [config.featuredWineId, wines]);
+  const featuredWines = useMemo(() => {
+    // We show the top 2 wines in the featured section for the new pagination.
+    return wines.slice(0, 2);
+  }, [wines]);
 
   // SEO meta + favicon + <html lang> — skip in preview to avoid clobbering Studio tab
-  const isPreview = Boolean(previewConfig);
   useDocumentMeta(isPreview ? FALLBACK_CONFIG : config);
 
   const theme = useLandingTheme(config.landingTheme);
@@ -182,16 +128,16 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
       <main>
         <Hero config={config} />
         {showPhilosophy && <Philosophy config={config} />}
-        {showVarietalRibbon && <VarietalRibbon />}
+        {showVarietalRibbon && <VarietalRibbon config={config} />}
         <Collection
           config={config}
           wines={wines}
           onOpenWine={setActiveWine}
         />
-        {showFeaturedWine && featuredWine && (
+        {showFeaturedWine && wines.length > 0 && (
           <FeaturedWine
             config={config}
-            wine={featuredWine}
+            wines={wines}
             onOpenWine={setActiveWine}
           />
         )}

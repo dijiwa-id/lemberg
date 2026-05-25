@@ -1,7 +1,7 @@
 {
   "name": "lemberg-winery",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -20,6 +20,7 @@
     "motion": "^11.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^6.27.0",
     "tailwind-merge": "^2.5.0"
   },

@@ -7,6 +7,24 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    role = Column(String, default="admin")  # admin | editor
+    isActive = Column(Boolean, default=True)
+
+
+class AuditLog(Base):
+    """Audit trail for administrative actions. Records who did what, when,
+    and on which entity. Details can store a JSON snapshot of the change
+    or relevant context."""
+
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(String, nullable=False, index=True)  # ISO 8601 UTC
+    username = Column(String, nullable=False, index=True)
+    action = Column(String, nullable=False, index=True)    # CREATE | UPDATE | DELETE | LOGIN
+    target_type = Column(String, nullable=False, index=True) # wine | config | menu | template ...
+    target_id = Column(String, nullable=True)
+    details = Column(Text, nullable=True)
 
 
 class Config(Base):
@@ -29,20 +47,28 @@ class Wine(Base):
     # the `alcohol` field in the studio's wine form — alcohol stays on
     # the model as a deprecated column so existing data is preserved.
     category = Column(String, nullable=True)
-    alcohol = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     # Use camelCase python attrs to match Pydantic field names — keeps
     # response serialization simple and frontend keys stable.
     tastingNotes = Column(Text, nullable=True)
     foodPairing = Column(String, nullable=True)
+    bottleCount = Column(String, nullable=True)
+    alcoholPercentage = Column(String, nullable=True)
     price = Column(Float, nullable=True, default=0.0)
+    stock = Column(Integer, nullable=True)
     status = Column(String, nullable=True, default="available")
-    image = Column(String, nullable=True)          # legacy primary; keep for backwards compat
     labelImage = Column(String, nullable=True)
+    
+    # Cinematic hero settings per wine
+    heroImage = Column(String, nullable=True)
+    heroImagePosition = Column(String, nullable=True, default="center") # center | left | right
+    overlayOpacity = Column(Float, nullable=True, default=0.0)
+    enableReflection = Column(Boolean, nullable=True, default=False)
+    enableBlurEffect = Column(Boolean, nullable=True, default=False)
+
     # Editorial gallery — list of image URLs. The first entry is the
-    # "default" shown on the landing card / modal hero. When empty, the
-    # legacy `image` field is used as a fallback. Stored as JSON so we can
-    # extend per-image metadata (caption, etc.) later without a migration.
+    # "default" shown on the landing card / modal hero.
+    # Stored as JSON so we can extend per-image metadata later.
     images = Column(JSON, nullable=True)
     order = Column(Integer, default=0)
 

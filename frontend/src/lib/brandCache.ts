@@ -11,6 +11,7 @@
 import type { SiteConfig } from "./types";
 
 const KEY = "lemberg_brand_cache";
+const CACHE_VERSION = 1;
 
 export interface CachedBrand {
   logoText: string;
@@ -18,6 +19,7 @@ export interface CachedBrand {
   logoFont: string;
   /** A short subtitle below the wordmark — pulled from heroEyebrow. */
   tagline: string;
+  v?: number; // Version field
 }
 
 const DEFAULT_BRAND: CachedBrand = {
@@ -25,6 +27,7 @@ const DEFAULT_BRAND: CachedBrand = {
   logoImage: "",
   logoFont: "Cormorant Garamond",
   tagline: "Tulbagh Valley · South Africa",
+  v: CACHE_VERSION,
 };
 
 export function getCachedBrand(): CachedBrand {
@@ -33,7 +36,17 @@ export function getCachedBrand(): CachedBrand {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return DEFAULT_BRAND;
     const parsed = JSON.parse(raw) as Partial<CachedBrand>;
-    return { ...DEFAULT_BRAND, ...parsed };
+    
+    // Version check — if version mismatch or missing, fall back to defaults
+    if (!parsed || parsed.v !== CACHE_VERSION) {
+      return DEFAULT_BRAND;
+    }
+
+    return { 
+      ...DEFAULT_BRAND, 
+      ...parsed,
+      v: CACHE_VERSION 
+    };
   } catch {
     return DEFAULT_BRAND;
   }
@@ -46,6 +59,7 @@ export function cacheBrand(config: Partial<SiteConfig> | null | undefined): void
     logoImage: (config.logoImage || "").trim(),
     logoFont: (config.logoFont || "").trim() || DEFAULT_BRAND.logoFont,
     tagline: (config.heroEyebrow || "").trim() || DEFAULT_BRAND.tagline,
+    v: CACHE_VERSION,
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(brand));

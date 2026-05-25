@@ -1,401 +1,298 @@
-import { motion, useScroll, useTransform, useInView } from "motion/react";
-import { useRef, useState } from "react";
-import { ImageOff } from "lucide-react";
-import type { SiteConfig, Wine } from "../../lib/types";
-import { currencySymbol, wineDefaultImage } from "../../lib/types";
+import { motion, AnimatePresence } from "motion/react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { SiteConfig, Wine, FeaturedSlide } from "../../lib/types";
+import { 
+  currencySymbol, 
+  wineDefaultImage, 
+  configFlag, 
+  parseFeaturedSlides,
+  isRenderableFeaturedSlide
+} from "../../lib/types";
 import { resolveAsset } from "../../services/api";
-import { Reveal, RevealLines } from "../motion/Reveal";
+import { RevealLines } from "../motion/Reveal";
 import { cn } from "../../lib/utils";
 
 interface FeaturedWineProps {
   config: SiteConfig;
-  wine?: Wine | null;
+  wines: Wine[];
   onOpenWine?: (wine: Wine) => void;
 }
 
-export function FeaturedWine({ config, wine, onOpenWine }: FeaturedWineProps) {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  // Parallax range for the primary bottle.
-  const bottleY = useTransform(scrollYProgress, [0, 1], ["14%", "-14%"]);
+function cleanHTML(html: string | undefined | null): string {
+  if (!html) return "";
+  const cleaned = html.replace(/<p><br><\/p>|<p><\/p>/gi, "").trim();
+  return cleaned;
+}
 
-  // Resolve the primary image: editor override → wine's gallery default → legacy image.
-  const primaryImage =
-    config.featuredImage?.trim() || wineDefaultImage(wine);
+export function FeaturedWine({ config, wines, onOpenWine }: FeaturedWineProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const slides = useMemo(() => {
+    const enabled = configFlag(config.featuredSliderEnabled, true);
+    const parsed = parseFeaturedSlides(config.featuredSlides);
+    const renderable = parsed.filter(isRenderableFeaturedSlide);
+
+    if (!enabled || renderable.length === 0) {
+      return wines.slice(0, 3).map(w => ({
+        wineId: w.id,
+        heading: w.name,
+        subtitle: w.category,
+        body: w.description,
+        image: w.heroImage || wineDefaultImage(w),
+      })) as FeaturedSlide[];
+    }
+    return renderable;
+  }, [config.featuredSlides, config.featuredSliderEnabled, wines]);
+
+  const activeSlide = slides[activeIndex];
+  const linkedWine = wines.find(w => String(w.id) === String(activeSlide.wineId));
+
+  const nextSlide = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % slides.length);
+  }, [slides.length]);
+
+  const prevSlide = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  }, [slides.length]);
+
+  // Autoplay logic
+  useEffect(() => {
+    const enabled = configFlag(config.featuredSliderAutoplay, true);
+    if (!enabled || slides.length <= 1) return;
+
+    const interval = Number(config.featuredSliderInterval || 8000);
+    const timer = setInterval(nextSlide, interval);
+    return () => clearInterval(timer);
+  }, [slides.length, config.featuredSliderAutoplay, config.featuredSliderInterval, nextSlide]);
+
+  const heading = activeSlide.heading || config.featuredHeading || linkedWine?.name || "Lemberg Estate";
+  const subtitle = activeSlide.subtitle || config.featuredSubtitle || linkedWine?.category || "Flagship Release";
+  const cleanBody = cleanHTML(activeSlide.body || config.featuredBody || linkedWine?.description);
+  
+  const heroSrc = activeSlide.image || linkedWine?.heroImage || config.featuredImage || wineDefaultImage(linkedWine);
+  const overlayOpacity = linkedWine?.overlayOpacity ?? Number(config.featuredOverlayOpacity || 0.1);
+  const enableReflection = linkedWine?.enableReflection ?? configFlag(config.featuredEnableReflection, true);
+  const enableBlur = linkedWine?.enableBlurEffect ?? configFlag(config.featuredEnableBlurEffect, false);
 
   return (
     <section
-      ref={ref}
       id="featured"
       data-theme="dark"
-      className="relative overflow-hidden border-t border-[var(--border-subtle)] bg-[var(--color-ink-950)] px-6 py-32 md:px-10 md:py-44"
+      className="relative h-screen min-h-[600px] overflow-hidden bg-[var(--color-ink-950)] flex items-center"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_50%,_rgba(185,72,60,0.16)_0%,_transparent_60%)]" />
+      {/* ── Side Controls (Hero style) ────────────────────── */}
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="group absolute left-4 md:left-8 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center border border-[var(--color-pearl-300)]/10 bg-black/10 text-[var(--color-bone-500)] backdrop-blur-sm transition-all hover:border-[var(--color-pearl-300)]/40 hover:text-[var(--color-pearl-300)]"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft size={18} strokeWidth={1} />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="group absolute right-4 md:right-8 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center border border-[var(--color-pearl-300)]/10 bg-black/10 text-[var(--color-bone-500)] backdrop-blur-sm transition-all hover:border-[var(--color-pearl-300)]/40 hover:text-[var(--color-pearl-300)]"
+            aria-label="Next slide"
+          >
+            <ChevronRight size={18} strokeWidth={1} />
+          </button>
+        </>
+      )}
 
-      <div className="relative mx-auto grid max-w-[1480px] items-center gap-16 md:grid-cols-12">
-        {/* ── Copy column ───────────────────────────────────── */}
-        <div className="md:col-span-6 md:col-start-1">
-          <Reveal y={12} className="mb-8">
-            <div className="flex items-center gap-4">
-              <span className="block h-px w-10 bg-[var(--color-pearl-300)]/60" />
-              <span className="label-eyebrow text-[var(--color-bone-400)]">
-                {config.featuredEyebrow || "Flagship release"}
-              </span>
-            </div>
-          </Reveal>
-
-          <h2 className="font-display text-[clamp(2.6rem,6vw,5.5rem)] font-light leading-[1] tracking-[-0.015em] text-[var(--color-bone-50)]">
-            <RevealLines
-              text={config.featuredHeading || wine?.name || "Lemberg Louis"}
-              italicLines={[0]}
-              className="italic text-[var(--color-pearl-300)]"
-            />
-          </h2>
-
-          <div className="mt-8 grid max-w-md grid-cols-3 gap-6 border-y border-[var(--border-subtle)] py-6">
-            <div>
-              <span className="label-eyebrow text-[var(--color-bone-500)]">Varietal</span>
-              <p className="mt-2 text-sm text-[var(--color-bone-200)]">{wine?.varietal || "—"}</p>
-            </div>
-            <div>
-              <span className="label-eyebrow text-[var(--color-bone-500)]">Vintage</span>
-              <p className="mt-2 text-sm text-[var(--color-bone-200)]">{wine?.vintage || "—"}</p>
-            </div>
-            <div>
-              <span className="label-eyebrow text-[var(--color-bone-500)]">Category</span>
-              <p className="mt-2 text-sm text-[var(--color-bone-200)]">
-                {wine?.category || wine?.alcohol || "—"}
-              </p>
-            </div>
-          </div>
-
-          <Reveal y={16} delay={0.2} className="mt-10 max-w-md">
-            <p className="body-editorial">{config.featuredBody}</p>
-          </Reveal>
-
-          {wine?.tastingNotes && (
-            <Reveal y={16} delay={0.28} className="mt-10 max-w-md">
-              <span className="label-eyebrow text-[var(--color-bone-500)]">Tasting notes</span>
-              <p className="mt-3 font-display italic text-xl leading-snug text-[var(--color-bone-100)]">
-                “{wine.tastingNotes}”
-              </p>
-            </Reveal>
-          )}
-
-          <Reveal y={16} delay={0.35} className="mt-10 flex flex-wrap items-center gap-6">
-            <button
-              type="button"
-              onClick={() => wine && onOpenWine?.(wine)}
-              disabled={!wine}
-              className="group inline-flex items-center gap-4 border border-[var(--color-bone-300)]/40 px-8 py-3.5 text-[var(--color-bone-100)] transition-colors hover:bg-[var(--color-bone-50)] hover:text-[var(--color-ink-900)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="label-meta">Reserve a bottle</span>
-              <svg width="20" height="8" viewBox="0 0 20 8" fill="none" aria-hidden>
-                <path
-                  d="M1 4h17m0 0L15 1m3 3l-3 3"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="transition-transform duration-500 group-hover:translate-x-1"
+      {/* ── BACKGROUND LAYER (Full bleed) ─────────────────── */}
+      <div className="absolute inset-0 z-0">
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={activeIndex}
+            initial={{ opacity: 0, scale: 1.01 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+          >
+            {heroSrc ? (
+              <div className="relative h-full w-full overflow-hidden">
+                <img
+                  src={resolveAsset(heroSrc)}
+                  alt={heading}
+                  className={cn(
+                    "h-full w-full object-cover object-right transition-all duration-[2000ms] ease-out",
+                    enableBlur && "scale-110 blur-xl"
+                  )}
                 />
-              </svg>
-            </button>
-            {wine?.price && (
-              <span className="font-display text-2xl italic text-[var(--color-pearl-300)]">
-                {currencySymbol(config.currency)}{wine.price.toFixed(0)}
-              </span>
-            )}
-          </Reveal>
-        </div>
+                
+                {/* Cinematic Reflection Overlay */}
+                {enableReflection && (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-[rgba(255,255,255,0.015)] to-transparent mix-blend-overlay pointer-events-none" />
+                )}
 
-        {/* ── Bento gallery column ──────────────────────────── */}
-        <div className="md:col-span-5 md:col-start-8">
-          <BentoGallery
-            layout={resolveBentoLayout(config.featuredBentoLayout)}
-            primarySrc={primaryImage}
-            primaryAlt={wine?.name || "Featured wine"}
-            primaryY={bottleY}
-            accent1Src={config.featuredImageAccent1}
-            accent1Caption={config.featuredImageAccent1Caption}
-            accent2Src={config.featuredImageAccent2}
-            accent2Caption={config.featuredImageAccent2Caption}
-          />
+                {/* Dark Base Overlay */}
+                <div 
+                  className="absolute inset-0 bg-[var(--color-ink-950)]" 
+                  style={{ opacity: overlayOpacity * 0.5 }} // Further reduced base darkening
+                />
+                
+                {/* Sophisticated Multi-Stage Gradient for Text Readability - Even subtler */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-ink-950)_0%,rgba(10,10,12,0.7)_20%,rgba(10,10,12,0.2)_40%,transparent_75%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_top,var(--color-ink-950)_0%,transparent_20%)] opacity-40" />
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[var(--color-ink-950)]/30 to-transparent z-1" />
+              </div>
+            ) : (
+              <div className="h-full w-full bg-[var(--color-ink-900)]" />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── CONTENT LAYER ─────────────────────────────────── */}
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-12 py-8 md:px-20 lg:px-28">
+        <div className="flex flex-col h-full justify-center min-h-[450px] lg:min-h-[550px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col w-full"
+            >
+              <div className="max-w-screen-md lg:max-w-screen-lg">
+                {/* Eyebrow */}
+                <div className="mb-4 md:mb-6 flex items-center gap-4">
+                  <motion.span 
+                    initial={{ width: 0 }}
+                    animate={{ width: 30 }}
+                    transition={{ delay: 0.3, duration: 0.8 }}
+                    className="block h-px bg-[var(--color-pearl-300)]/40" 
+                  />
+                  <span className="label-eyebrow text-[var(--color-pearl-300)] uppercase tracking-[0.4em] text-[8px] md:text-[9px] font-semibold">
+                    {activeSlide.eyebrow || config.featuredEyebrow || "Selected Release"}
+                  </span>
+                </div>
+
+                {/* Title & Subtitle */}
+                <div className="space-y-2 md:space-y-3">
+                  <h2 className="font-display text-[clamp(1.8rem,6vw,4rem)] font-extralight leading-[1.05] tracking-tighter text-[var(--color-bone-50)]">
+                    <RevealLines text={heading} italicLines={[1]} />
+                  </h2>
+                  <p className="font-display text-sm md:text-lg italic font-light tracking-wider text-[var(--color-bone-400)]/70 max-w-lg">
+                    {subtitle}
+                  </p>
+                </div>
+
+                {/* Description Area */}
+                {cleanBody && (
+                  <div className="mt-4 md:mt-6 max-w-lg md:max-w-xl">
+                    <div
+                      className="body-editorial text-xs md:text-base leading-relaxed text-[var(--color-bone-300)]/70 font-light"
+                      dangerouslySetInnerHTML={{ __html: cleanBody }}
+                    />
+                  </div>
+                )}
+
+                {/* Metadata Grid (Minimalist) */}
+                {linkedWine && (
+                  <div className="mt-6 md:mt-8 flex flex-wrap gap-x-8 md:gap-x-12 gap-y-4 border-t border-[var(--color-pearl-300)]/10 pt-4">
+                    <MetaItem label="Varietal" value={linkedWine.varietal} />
+                    <MetaItem label="Vintage" value={linkedWine.vintage} />
+                    <MetaItem label="Region" value={linkedWine.region || "Tulbagh Valley"} />
+                  </div>
+                )}
+
+                {/* CTA Area */}
+                <div className="mt-8 md:mt-10 flex flex-wrap items-center gap-5 md:gap-8">
+                  <button
+                    type="button"
+                    onClick={() => linkedWine && onOpenWine?.(linkedWine)}
+                    className="group relative flex items-center gap-6 overflow-hidden border border-[var(--color-pearl-300)]/20 px-6 md:px-9 py-3 md:py-4 text-[var(--color-bone-50)] transition-all hover:border-[var(--color-pearl-300)]/40 hover:bg-white/[0.03] backdrop-blur-xl"
+                  >
+                    <span className="label-meta text-[8px] md:text-[10px] uppercase tracking-[0.3em] font-bold">
+                      {activeSlide.ctaPrimary || config.featuredCtaPrimary || "Reserve a bottle"}
+                    </span>
+                    <div className="relative flex items-center">
+                      <div className="h-px w-4 bg-[var(--color-pearl-300)]/30 transition-all duration-700 group-hover:w-8 group-hover:bg-[var(--color-pearl-300)]" />
+                      <ChevronRight size={12} className="text-[var(--color-pearl-300)]/40 transition-transform duration-700 group-hover:translate-x-1 group-hover:text-[var(--color-pearl-300)]" />
+                    </div>
+                  </button>
+                  
+                  {(activeSlide.ctaSecondary || config.featuredCtaSecondary) && (
+                    <a
+                      href="#collection"
+                      className="label-meta text-[8px] md:text-[10px] uppercase tracking-[0.3em] text-[var(--color-bone-500)] transition-all hover:text-[var(--color-pearl-300)] group flex items-center gap-3"
+                    >
+                      <span className="relative">
+                        {activeSlide.ctaSecondary || config.featuredCtaSecondary}
+                        <span className="absolute -bottom-1 left-0 h-px w-0 bg-[var(--color-pearl-300)] transition-all duration-500 group-hover:w-full" />
+                      </span>
+                    </a>
+                  )}
+
+                  {linkedWine?.price && (
+                    <div className="hidden sm:flex ml-auto flex-col items-end opacity-90">
+                      <span className="label-eyebrow text-[7px] text-[var(--color-bone-500)] mb-0.5 uppercase tracking-[0.2em]">Estate Price</span>
+                      <span className="font-display text-2xl md:text-4xl font-extralight italic text-[var(--color-pearl-300)]/90">
+                        {currencySymbol(config.currency)}
+                        {linkedWine.price.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Bottom Pagination (Subtle Dots) */}
+          {slides.length > 1 && (
+            <div className="mt-10 md:mt-12 flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveIndex(idx)}
+                    className="group relative flex h-6 items-center px-1"
+                    aria-label={`Go to slide ${idx + 1}`}
+                  >
+                    <div className={cn(
+                      "h-px transition-all duration-700 rounded-full",
+                      activeIndex === idx 
+                        ? "w-8 bg-[var(--color-pearl-300)]" 
+                        : "w-4 bg-[var(--color-bone-900)] group-hover:bg-[var(--color-bone-700)]"
+                    )} />
+                    <span className={cn(
+                      "absolute -top-4 left-1/2 -translate-x-1/2 font-mono text-[7px] transition-opacity duration-500",
+                      activeIndex === idx ? "opacity-100 text-[var(--color-pearl-300)]" : "opacity-0"
+                    )}>
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="hidden md:block">
+                <span className="font-mono text-[8px] tracking-[0.2em] text-[var(--color-bone-600)]">
+                  {String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────
- * Bento gallery — 4 layout variants
- *
- *   stack-right (default)  Primary 3×2 left  | Accent1 2×1 top-right
- *                                            | Accent2 2×1 bottom-right
- *   stack-left             Accent1 2×1 left  | Primary 3×2 right
- *                          Accent2 2×1 left
- *   top-hero               Primary 5×1 spans full width on top
- *                          Accent1 + Accent2 below side-by-side (each 5×1 / 2)
- *   tri-equal              Three equal columns: Accent1 | Primary | Accent2
- *
- * Each variant returns a record of class strings — the grid parent + the
- * three slots. We don't try to share renderers because every layout has
- * its own ideal aspect ratio.
- * ─────────────────────────────────────────────────────────────────── */
-
-type BentoLayout = "stack-right" | "stack-left" | "top-hero" | "tri-equal";
-const KNOWN_BENTO_LAYOUTS: ReadonlySet<BentoLayout> = new Set([
-  "stack-right",
-  "stack-left",
-  "top-hero",
-  "tri-equal",
-]);
-
-function resolveBentoLayout(raw: string | undefined): BentoLayout {
-  if (raw && (KNOWN_BENTO_LAYOUTS as Set<string>).has(raw)) return raw as BentoLayout;
-  return "stack-right";
-}
-
-interface BentoPlacement {
-  parent: string;
-  primary: string;
-  primaryAspect: string;  // applied below md when wrapper grid collapses
-  accentWrapper: string;  // mobile wrapper (md:contents to dissolve at md+)
-  accent1: string;
-  accent2: string;
-}
-
-const BENTO_LAYOUTS: Record<BentoLayout, BentoPlacement> = {
-  "stack-right": {
-    parent: "grid gap-3 md:grid-cols-5 md:grid-rows-2 md:gap-4 md:aspect-[5/6]",
-    primary: "md:col-span-3 md:row-span-2 md:aspect-auto",
-    primaryAspect: "aspect-[3/4]",
-    accentWrapper: "grid grid-cols-2 gap-3 md:contents",
-    accent1: "md:col-span-2 md:row-span-1 md:aspect-auto",
-    accent2: "md:col-span-2 md:row-span-1 md:aspect-auto",
-  },
-  "stack-left": {
-    parent: "grid gap-3 md:grid-cols-5 md:grid-rows-2 md:gap-4 md:aspect-[5/6]",
-    primary: "md:col-start-3 md:col-span-3 md:row-span-2 md:row-start-1 md:aspect-auto",
-    primaryAspect: "aspect-[3/4]",
-    accentWrapper: "grid grid-cols-2 gap-3 md:contents",
-    accent1: "md:col-start-1 md:col-span-2 md:row-start-1 md:row-span-1 md:aspect-auto",
-    accent2: "md:col-start-1 md:col-span-2 md:row-start-2 md:row-span-1 md:aspect-auto",
-  },
-  "top-hero": {
-    parent: "grid gap-3 md:grid-cols-2 md:gap-4",
-    primary: "md:col-span-2 md:aspect-[16/9]",
-    primaryAspect: "aspect-[16/10]",
-    accentWrapper: "grid grid-cols-2 gap-3 md:contents",
-    accent1: "md:col-span-1 md:aspect-square",
-    accent2: "md:col-span-1 md:aspect-square",
-  },
-  "tri-equal": {
-    parent: "grid gap-3 md:grid-cols-3 md:gap-4",
-    primary: "md:col-start-2 md:col-span-1 md:row-start-1 md:aspect-[3/4]",
-    primaryAspect: "aspect-[3/4]",
-    accentWrapper: "grid grid-cols-2 gap-3 md:contents",
-    accent1: "md:col-start-1 md:row-start-1 md:aspect-[3/4]",
-    accent2: "md:col-start-3 md:row-start-1 md:aspect-[3/4]",
-  },
-};
-
-interface BentoGalleryProps {
-  layout: BentoLayout;
-  primarySrc: string;
-  primaryAlt: string;
-  /** motion value for the bottle parallax y-offset */
-  primaryY: any;
-  accent1Src?: string;
-  accent1Caption?: string;
-  accent2Src?: string;
-  accent2Caption?: string;
-}
-
-function BentoGallery({
-  layout,
-  primarySrc,
-  primaryAlt,
-  primaryY,
-  accent1Src,
-  accent1Caption,
-  accent2Src,
-  accent2Caption,
-}: BentoGalleryProps) {
-  const p = BENTO_LAYOUTS[layout];
+function MetaItem({ label, value }: { label: string; value?: string | number | null }) {
+  if (!value) return null;
   return (
-    <div className={p.parent} role="group" aria-label="Featured wine gallery">
-      <PrimarySlot
-        src={primarySrc}
-        alt={primaryAlt}
-        y={primaryY}
-        placement={p.primary}
-        mobileAspect={p.primaryAspect}
-      />
-
-      {/* On mobile, the two accents pack into a 2-col inner grid; at md+
-          `md:contents` dissolves the wrapper so accents join the parent
-          grid and pick up their per-layout placement classes. */}
-      <div className={p.accentWrapper}>
-        <AccentSlot
-          src={accent1Src}
-          alt="Featured detail one"
-          caption={accent1Caption}
-          delay={0.15}
-          placement={p.accent1}
-        />
-        <AccentSlot
-          src={accent2Src}
-          alt="Featured detail two"
-          caption={accent2Caption}
-          delay={0.25}
-          placement={p.accent2}
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-
-interface PrimarySlotProps {
-  src: string;
-  alt: string;
-  y: any;
-  placement: string;
-  mobileAspect: string;
-}
-
-function PrimarySlot({ src, alt, y, placement, mobileAspect }: PrimarySlotProps) {
-  const [loaded, setLoaded] = useState(false);
-  const hasSrc = Boolean(src && src.trim());
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden",
-        !loaded && hasSrc && "animate-pulse",
-        mobileAspect,
-        placement
-      )}
-    >
-      {/* Iridescent radial glow behind the bottle */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(201,196,187,0.12)_0%,_transparent_70%)]" />
-
-      {hasSrc ? (
-        <motion.img
-          src={resolveAsset(src)}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setLoaded(true)}
-          style={{ y }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: loaded ? 1 : 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10 h-[88%] w-[88%] object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.6)]"
-        />
-      ) : (
-        <EmptyMark />
-      )}
-
-      {/* Floor shadow puddle */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-10 bottom-6 z-0 h-10 rounded-[50%] bg-[rgba(0,0,0,0.55)] blur-2xl"
-      />
-    </motion.div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-
-interface AccentSlotProps {
-  src?: string;
-  alt: string;
-  caption?: string;
-  delay?: number;
-  placement: string;
-}
-
-function AccentSlot({
-  src,
-  alt,
-  caption,
-  delay = 0,
-  placement,
-}: AccentSlotProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.2 });
-  const [loaded, setLoaded] = useState(false);
-  const hasSrc = Boolean(src && src.trim());
-
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "group relative overflow-hidden border border-[var(--border-subtle)] bg-[var(--color-ink-850)] aspect-square",
-        !loaded && hasSrc && "animate-pulse",
-        placement
-      )}
-    >
-      {hasSrc ? (
-        <motion.div
-          initial={{ clipPath: "inset(0 100% 0 0)" }}
-          animate={inView ? { clipPath: "inset(0 0% 0 0)" } : {}}
-          transition={{ duration: 1.3, ease: [0.65, 0, 0.35, 1], delay }}
-          className="absolute inset-0"
-        >
-          <motion.img
-            src={resolveAsset(src!)}
-            alt={alt}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setLoaded(true)}
-            initial={{ scale: 1.08, opacity: 0 }}
-            whileInView={{
-              scale: 1.0,
-              opacity: loaded ? 1 : 0,
-            }}
-            transition={{
-              scale: { duration: 1.4, ease: [0.22, 1, 0.36, 1], delay },
-              opacity: { duration: 0.5 },
-            }}
-            className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105"
-          />
-        </motion.div>
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-bone-500)]">
-          <ImageOff size={20} className="opacity-60" />
-          <span className="label-eyebrow opacity-70">No image set</span>
-        </div>
-      )}
-
-      {/* Bottom gradient + caption */}
-      {caption && hasSrc && (
-        <>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[rgba(7,7,10,0.7)] via-[rgba(7,7,10,0.25)] to-transparent" />
-          <span className="absolute bottom-3 left-4 label-eyebrow text-[var(--color-bone-100)]">
-            {caption}
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-
-function EmptyMark() {
-  return (
-    <div className="relative z-10 flex flex-col items-center gap-2 text-[var(--color-bone-500)]">
-      <ImageOff size={22} className="opacity-60" />
-      <span className="label-eyebrow opacity-70">No bottle image set</span>
+    <div className="flex flex-col gap-1 min-w-[100px]">
+      <span className="label-eyebrow text-[9px] uppercase tracking-[0.2em] text-[var(--color-bone-500)] font-semibold">
+        {label}
+      </span>
+      <p className="font-display text-lg md:text-xl text-[var(--color-bone-200)] font-light tracking-wide">
+        {value}
+      </p>
     </div>
   );
 }

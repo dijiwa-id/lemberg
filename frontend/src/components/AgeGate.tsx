@@ -318,12 +318,11 @@ function GateView({
         )}
       </motion.h2>
 
-      <motion.p
+      <motion.div
         variants={reduced ? undefined : CHILD}
         className="body-editorial mt-6 max-w-md text-[var(--color-bone-300)]"
-      >
-        {body}
-      </motion.p>
+        dangerouslySetInnerHTML={{ __html: body }}
+      />
 
       {/* Min age chip — small reassurance of what they're confirming */}
       <motion.div
@@ -399,9 +398,10 @@ function DeniedView({
       <h2 className="mt-8 font-display text-[clamp(1.6rem,3.6vw,2.4rem)] font-light italic leading-[1.15] tracking-[-0.015em] text-[var(--color-bone-50)] sm:mt-10">
         Thank you for your honesty.
       </h2>
-      <p className="body-editorial mt-6 max-w-md text-[var(--color-bone-300)]">
-        {message}
-      </p>
+      <div
+        className="body-editorial mt-6 max-w-md text-[var(--color-bone-300)]"
+        dangerouslySetInnerHTML={{ __html: message }}
+      />
       <div className="mt-10 inline-flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
         <span
           className="block h-px w-10 bg-[var(--color-pearl-300)]/40"

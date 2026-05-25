@@ -61,9 +61,10 @@ export function EstateBand({ config }: EstateBandProps) {
         </h2>
 
         <Reveal y={16} delay={0.25} className="mt-8 max-w-xl">
-          <p className="body-editorial text-[var(--color-bone-200)]">
-            {config.estateBody}
-          </p>
+          <div
+            className="body-editorial text-[var(--color-bone-200)]"
+            dangerouslySetInnerHTML={{ __html: config.estateBody || "" }}
+          />
         </Reveal>
       </div>
     </section>

@@ -23,11 +23,11 @@ export function ColorField({
 
   return (
     <FieldShell label={label} hint={hint}>
-      <div className="flex items-center gap-3">
-        <label className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden border border-[var(--border-default)] bg-[var(--bg-input)]">
+      <div className="flex items-center gap-4">
+        <label className="relative group flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden border border-[var(--color-ink-700)] bg-[var(--color-ink-950)]/40 transition-all hover:border-[var(--color-bone-500)] shadow-inner">
           <span
             aria-hidden
-            className="absolute inset-1"
+            className="absolute inset-2 shadow-sm transition-transform group-hover:scale-110"
             style={{ backgroundColor: safe }}
           />
           <input
@@ -38,27 +38,29 @@ export function ColorField({
             aria-label={`${label} colour picker`}
           />
         </label>
-        <input
-          type="text"
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 border border-[var(--border-default)] bg-[var(--bg-input)] px-3 py-2.5 font-mono text-sm text-[var(--color-bone-100)] transition-colors placeholder:text-[var(--color-bone-600)] focus:border-[var(--color-pearl-300)] focus:outline-none"
-        />
+        <div className="relative flex-1 group">
+          <input
+            type="text"
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full border border-[var(--color-ink-700)] bg-[var(--color-ink-950)]/40 px-4 py-3 font-mono text-sm text-[var(--color-bone-100)] transition-all placeholder:text-[var(--color-bone-700)] focus:border-[var(--color-pearl-300)] focus:bg-[var(--color-ink-950)]/60 focus:outline-none shadow-inner"
+          />
+        </div>
         {value && (
           <button
             type="button"
             onClick={() => onChange("")}
             aria-label="Clear colour"
-            className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--border-default)] bg-[var(--bg-input)] text-[var(--color-bone-400)] transition-colors hover:text-[var(--color-bone-100)]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center border border-[var(--color-ink-700)] bg-[var(--color-ink-950)]/40 text-[var(--color-bone-500)] transition-all hover:text-[var(--color-wine-500)] hover:border-[var(--color-wine-900)] shadow-inner"
           >
-            <X size={14} />
+            <X size={16} />
           </button>
         )}
       </div>
       {!valid && value && (
-        <p className="label-eyebrow mt-2 text-[var(--color-wine-500)]">
-          Use a hex value like #E6DECF
+        <p className="text-[10px] uppercase tracking-widest mt-2 text-[var(--color-wine-500)] font-medium">
+          Invalid Hex · e.g. #E6DECF
         </p>
       )}
     </FieldShell>

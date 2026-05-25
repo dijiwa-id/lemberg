@@ -118,7 +118,7 @@ function SingleHero({ config }: { config: SiteConfig }) {
       <motion.div className="absolute inset-0" style={{ y: imgY, scale: imgScale }}>
         <img
           src={resolveAsset(config.heroBackgroundImage)}
-          alt=""
+          alt="Lemberg Winery Landscape"
           loading="eager"
           fetchPriority="high"
           className="h-full w-full object-cover"
@@ -186,6 +186,11 @@ function HeroSlider({ config, slides }: { config: SiteConfig; slides: HeroSlide[
   const reduced = useReducedMotion() ?? false;
 
   const [index, setIndex] = useState(0);
+  const indexRef = useRef(index);
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
   const [direction, setDirection] = useState<1 | -1>(1);
   const [paused, setPaused] = useState(false);
   const total = slides.length;
@@ -195,13 +200,13 @@ function HeroSlider({ config, slides }: { config: SiteConfig; slides: HeroSlide[
       // Normalise into [0, total) and pick a direction so animations know
       // which way to slide. Wrap-around uses the shortest path heuristically.
       const normalised = ((next % total) + total) % total;
-      setDirection(normalised === (index + 1) % total ? 1 : normalised === (index - 1 + total) % total ? -1 : 1);
+      setDirection(normalised === (indexRef.current + 1) % total ? 1 : normalised === (indexRef.current - 1 + total) % total ? -1 : 1);
       setIndex(normalised);
     },
-    [index, total]
+    [total]
   );
-  const next = useCallback(() => goto(index + 1), [goto, index]);
-  const prev = useCallback(() => goto(index - 1), [goto, index]);
+  const next = useCallback(() => goto(indexRef.current + 1), [goto, total]);
+  const prev = useCallback(() => goto(indexRef.current - 1), [goto, total]);
 
   // Autoplay — skipped when paused (hover/focus), when there's a single
   // slide, or when the user prefers reduced motion. Restarts on every

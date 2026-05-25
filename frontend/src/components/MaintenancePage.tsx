@@ -25,9 +25,10 @@ export function MaintenancePage({ config }: Props) {
           A quiet pause.
         </h1>
 
-        <p className="mt-8 body-editorial max-w-md text-[var(--color-bone-300)]">
-          {message}
-        </p>
+        <div
+          className="mt-8 body-editorial max-w-md text-[var(--color-bone-300)]"
+          dangerouslySetInnerHTML={{ __html: message }}
+        />
 
         {config.footerEmail && (
           <a

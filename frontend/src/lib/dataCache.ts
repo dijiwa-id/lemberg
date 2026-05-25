@@ -33,6 +33,7 @@ const KEYS = {
   config: "lemberg_config_cache",
   wines: "lemberg_wines_cache",
   menu: "lemberg_menu_cache",
+  brand: "lemberg_brand_cache", // Shared with brandCache.ts
 } as const;
 
 interface CachedEnvelope<T> {
@@ -47,7 +48,14 @@ function read<T>(key: string): T | null {
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const env = JSON.parse(raw) as CachedEnvelope<T>;
-    if (!env || env.v !== CACHE_VERSION || env.data == null) return null;
+    
+    // Defensive checks for the envelope structure
+    if (!env || typeof env !== "object" || env.v !== CACHE_VERSION || env.data == null) {
+      return null;
+    }
+    
+    // If it's too old (e.g. > 30 days), we might want to skip it to avoid extreme staleness,
+    // though the current pattern overwrites it immediately anyway.
     return env.data;
   } catch {
     return null;
@@ -72,12 +80,12 @@ function write<T>(key: string, data: T): void {
 
 export function readCachedConfig(): SiteConfig | null {
   const c = read<SiteConfig>(KEYS.config);
-  if (!c || typeof c !== "object") return null;
+  if (!c || typeof c !== "object" || Array.isArray(c)) return null;
   return c;
 }
 
 export function writeCachedConfig(config: SiteConfig | null | undefined): void {
-  if (!config) return;
+  if (!config || typeof config !== "object") return;
   write(KEYS.config, config);
 }
 

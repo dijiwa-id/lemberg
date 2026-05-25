@@ -17,6 +17,8 @@ import {
   Layers,
   Building2,
   ShieldCheck,
+  Activity,
+  UserCog,
   LogOut,
   X,
 } from "lucide-react";
@@ -38,6 +40,7 @@ const CONTENT_ITEMS: NavItemDef[] = [
   { to: "/admin/brand", icon: Sparkles, label: "Brand" },
   { to: "/admin/hero", icon: ImageIcon, label: "Hero" },
   { to: "/admin/philosophy", icon: BookOpen, label: "Philosophy" },
+  { to: "/admin/ribbon", icon: Layers, label: "Varietal ribbon" },
   { to: "/admin/collection", icon: WineIcon, label: "Wine collection" },
   { to: "/admin/featured", icon: Star, label: "Featured wine" },
   { to: "/admin/estate", icon: Mountain, label: "Estate" },
@@ -53,6 +56,11 @@ const TOOL_ITEMS: NavItemDef[] = [
   { to: "/admin/age-gate", icon: ShieldCheck, label: "Age verification" },
   { to: "/admin/preview", icon: Eye, label: "Live preview" },
   { to: "/admin/settings", icon: SettingsIcon, label: "Settings" },
+];
+
+const SYSTEM_ITEMS: NavItemDef[] = [
+  { to: "/admin/users", icon: UserCog, label: "User accounts" },
+  { to: "/admin/audit", icon: Activity, label: "Activity log" },
 ];
 
 interface SidebarProps {
@@ -141,6 +149,14 @@ export function Sidebar({ open, onClose, studio }: SidebarProps) {
               <span className="font-sans tracking-wide">View public site</span>
             </a>
           </NavGroup>
+
+          {auth.user?.role === "admin" && (
+            <NavGroup title="System">
+              {SYSTEM_ITEMS.map((item) => (
+                <NavItem key={item.to} item={item} />
+              ))}
+            </NavGroup>
+          )}
         </nav>
 
         <div className="border-t border-[var(--color-ink-700)] px-5 py-4">

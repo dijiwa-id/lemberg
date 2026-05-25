@@ -21,6 +21,7 @@ venv/
 venv-win/
 .venv/
 env/
+tmp_venv/
 
 # Backend runtime state — must not be committed
 backend/cms.db

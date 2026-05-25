@@ -10,7 +10,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.api import auth, cms, menu, reservations, subscribers, templates
+from app.api import auth, cms, menu, reservations, subscribers, templates, audit
 from app.api.cms import UPLOAD_DIR
 from app.database import Base, SessionLocal, engine
 from app.migrate import add_missing_columns
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     # No teardown work needed — SQLAlchemy engine is process-lifetime.
 
 
-APP_VERSION = os.environ.get("LEMBERG_VERSION", "1.3.0")
+APP_VERSION = os.environ.get("LEMBERG_VERSION", "1.5.0")
 
 # OpenAPI / Swagger docs are useful for development but leak the full
 # request schema (every field, every validation rule) when left open in
@@ -143,6 +143,7 @@ app.include_router(menu.router, prefix="/api", tags=["menu"])
 app.include_router(reservations.router, prefix="/api", tags=["reservations"])
 app.include_router(subscribers.router, prefix="/api", tags=["subscribers"])
 app.include_router(templates.router, prefix="/api", tags=["templates"])
+app.include_router(audit.router, prefix="/api", tags=["audit"])
 
 # Serve uploaded images at /uploads/* — consumed by the frontend asset resolver.
 os.makedirs(UPLOAD_DIR, exist_ok=True)

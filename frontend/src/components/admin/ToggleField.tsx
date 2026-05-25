@@ -16,41 +16,47 @@ export function ToggleField({
   disabled,
 }: ToggleFieldProps) {
   return (
-    <label
+    <div
       className={cn(
-        "flex cursor-pointer items-start justify-between gap-6 py-4 transition-colors",
-        disabled && "cursor-not-allowed opacity-60"
+        "flex items-start justify-between gap-8 py-2 transition-all group",
+        disabled && "cursor-not-allowed opacity-40"
       )}
     >
-      <div className="min-w-0">
-        <p className="text-sm text-[var(--color-bone-100)]">{label}</p>
+      <div className="min-w-0 flex-1">
+        <h4 className={cn(
+          "font-sans text-sm font-semibold tracking-wide transition-colors",
+          value ? "text-[var(--color-bone-50)]" : "text-[var(--color-bone-300)]"
+        )}>
+          {label}
+        </h4>
         {description && (
-          <p className="mt-1 text-xs leading-relaxed text-[var(--color-bone-400)]">
+          <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-bone-500)] max-w-xl italic">
             {description}
           </p>
         )}
       </div>
-      <span
+      
+      <button
+        type="button"
         role="switch"
         aria-checked={value}
-        onClick={(e) => {
-          e.preventDefault();
-          if (!disabled) onChange(!value);
-        }}
+        disabled={disabled}
+        onClick={() => !disabled && onChange(!value)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center border transition-colors",
+          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 outline-none ring-offset-2 ring-offset-[var(--color-ink-900)] focus-visible:ring-2 focus-visible:ring-[var(--color-pearl-300)]",
           value
-            ? "border-[var(--color-pearl-300)] bg-[var(--color-pearl-300)]"
-            : "border-[var(--border-default)] bg-[var(--bg-input)]"
+            ? "bg-[var(--color-pearl-300)] shadow-[0_0_12px_rgba(230,222,207,0.3)]"
+            : "bg-[var(--color-ink-700)] hover:bg-[var(--color-ink-600)]"
         )}
       >
         <span
           className={cn(
-            "block h-4 w-4 transform bg-[var(--color-ink-900)] transition-transform",
-            value ? "translate-x-[22px]" : "translate-x-[3px]"
+            "pointer-events-none block h-4 w-4 rounded-full bg-[var(--color-ink-900)] shadow-sm ring-0 transition-transform duration-300",
+            value ? "translate-x-[24px]" : "translate-x-[3px]"
           )}
         />
-      </span>
+      </button>
+      
       <input
         type="checkbox"
         checked={value}
@@ -58,6 +64,6 @@ export function ToggleField({
         disabled={disabled}
         className="sr-only"
       />
-    </label>
+    </div>
   );
 }

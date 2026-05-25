@@ -60,7 +60,10 @@ export function Club({ config }: ClubProps) {
         </h2>
 
         <Reveal y={16} delay={0.2} className="mx-auto mt-8 max-w-lg">
-          <p className="body-editorial">{config.clubBody}</p>
+          <div
+            className="body-editorial"
+            dangerouslySetInnerHTML={{ __html: config.clubBody || "" }}
+          />
         </Reveal>
 
         <Reveal y={16} delay={0.32} className="mx-auto mt-12 max-w-md">

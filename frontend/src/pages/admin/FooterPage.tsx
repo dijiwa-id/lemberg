@@ -13,6 +13,16 @@ export function FooterPage({ ctx }: { ctx: AdminContext }) {
         description="Address, opening hours, and contact details that anchor the bottom of the page."
       />
       <div className="space-y-6 p-5 lg:p-10">
+        <Card title="Brand" description="Text displayed below the logo.">
+          <TextField
+            label="Footer tagline"
+            value={config.footerTagline || ""}
+            onChange={(v) => update({ footerTagline: v })}
+            multiline
+            placeholder="A small estate at the foot of the Witzenberg. Six wines a year, made with quiet conviction since 1978."
+          />
+        </Card>
+
         <Card title="Visit" description="Where, and when you are open.">
           <div className="grid gap-5 md:grid-cols-2">
             <TextField

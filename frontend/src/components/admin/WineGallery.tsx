@@ -10,9 +10,6 @@ interface WineGalleryProps {
   images: string[];
   /** Persisted on every change (add/remove/reorder/set-default). */
   onChange: (next: string[]) => void;
-  /** Legacy single-image hint — shown as the default thumbnail when the
-   *  array is empty so editors see what's currently on the landing card. */
-  legacyImage?: string;
 }
 
 /**
@@ -25,11 +22,8 @@ interface WineGalleryProps {
  * - Click the star on any non-default tile → it moves to index 0 and becomes
  *   the landing-card default.
  * - × removes the tile. Confirmation only when removing the default.
- * - If the gallery is empty, falls back to displaying `legacyImage` as a
- *   read-only preview with a "Migrate to gallery" CTA that copies it into
- *   the array.
  */
-export function WineGallery({ images, onChange, legacyImage }: WineGalleryProps) {
+export function WineGallery({ images, onChange }: WineGalleryProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -79,11 +73,6 @@ export function WineGallery({ images, onChange, legacyImage }: WineGalleryProps)
     onChange(images.filter((_, i) => i !== idx));
   }
 
-  function migrateLegacy() {
-    if (!legacyImage) return;
-    onChange([legacyImage]);
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -96,34 +85,6 @@ export function WineGallery({ images, onChange, legacyImage }: WineGalleryProps)
           </p>
         )}
       </div>
-
-      {!hasGallery && legacyImage && (
-        <div className="flex flex-wrap items-center gap-4 border border-dashed border-[var(--color-ink-600)] bg-[var(--color-ink-850)] p-4">
-          <div className="h-20 w-16 shrink-0 overflow-hidden border border-[var(--border-subtle)] bg-[var(--color-ink-900)]">
-            <img
-              src={resolveAsset(legacyImage)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-[var(--color-bone-200)]">
-              Currently using a single image.
-            </p>
-            <p className="mt-1 text-xs text-[var(--color-bone-500)]">
-              Convert it into a gallery to add more shots or change the
-              landing-card default.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={migrateLegacy}
-            className="border border-[var(--color-ink-600)] px-4 py-2 label-eyebrow text-[var(--color-bone-300)] transition-colors hover:border-[var(--color-bone-400)] hover:text-[var(--color-bone-100)]"
-          >
-            Convert
-          </button>
-        </div>
-      )}
 
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
         {images.map((url, idx) => {
@@ -203,8 +164,8 @@ export function WineGallery({ images, onChange, legacyImage }: WineGalleryProps)
           )}
         </button>
 
-        {/* Empty state when no gallery AND no legacy image */}
-        {!hasGallery && !legacyImage && (
+        {/* Empty state when no gallery */}
+        {!hasGallery && (
           <div className="col-span-2 flex aspect-square flex-col items-center justify-center gap-2 border border-dashed border-[var(--color-ink-600)] bg-[var(--color-ink-850)] text-[var(--color-bone-500)] sm:col-span-3 md:col-span-4">
             <ImageOff size={18} className="opacity-60" />
             <span className="label-eyebrow">No images yet</span>

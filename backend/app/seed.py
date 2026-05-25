@@ -47,23 +47,22 @@ DEFAULT_CONFIG = {
     "featuredWineId": "",
     "featuredEyebrow": "Flagship release",
     "featuredHeading": "Lemberg Louis",
+    "featuredSubtitle": "Flagship Bordeaux-style blend",
     "featuredBody": (
         "Our flagship Bordeaux-style red. Built on Cabernet Sauvignon from the home block, "
         "with parcels of Merlot and Cabernet Franc from older vines. Twenty-two months in "
         "French oak. A wine of slow conversations and longer evenings."
     ),
-    # Featured wine — bento gallery (3 images)
+    # Featured wine — cinematic hero (Single image fallback)
     "featuredImage": "",
-    "featuredImageAccent1": (
-        "https://images.unsplash.com/photo-1543418219-44e30b057fea"
-        "?w=1200&q=80&auto=format&fit=crop"
-    ),
-    "featuredImageAccent2": (
-        "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03"
-        "?w=1200&q=80&auto=format&fit=crop"
-    ),
-    "featuredImageAccent1Caption": "In the cellar",
-    "featuredImageAccent2Caption": "From the home block",
+    "featuredHeroImagePosition": "center",
+    "featuredOverlayOpacity": "0.1",
+    "featuredEnableReflection": "true",
+    "featuredEnableBlurEffect": "false",
+    "featuredCtaPrimary": "Reserve a bottle",
+    "featuredCtaSecondary": "Explore collection",
+    "featuredSeoTitle": "Featured Release — Lemberg Winery",
+    "featuredSeoDescription": "Discover our latest flagship release, handcrafted with quiet conviction.",
 
     "estateEyebrow": "The valley",
     "estateHeading": "Where the morning mist\nmeets the granite.",
@@ -91,7 +90,7 @@ DEFAULT_CONFIG = {
     ),
     "experienceCta": "Book a tasting",
     "experienceCtaEmail": "",
-    "experienceHours": "Tue–Sat · 10:00 — 16:00",
+    "experienceHours": "Tue–Fri · 10:00 — 16:00\nSat · 10:00 — 14:00",
     "experienceTasting": "6 wines · 75 min",
     "experienceBooking": "By appointment only",
 
@@ -129,6 +128,10 @@ DEFAULT_CONFIG = {
     "footerEmail": "info@lemberg.co.za",
     "footerPhone": "+27 23 230 0735",
     "footerInstagram": "@lembergwinery",
+    "footerTagline": (
+        "A small estate at the foot of the Witzenberg. Six wines a year, "
+        "made with quiet conviction since 1978."
+    ),
 
     # Application-wide settings — see SettingsPage in the studio
     "siteDescription": (
@@ -177,6 +180,14 @@ DEFAULT_CONFIG = {
     "collectionColumns": "3",            # "2" | "3" | "4" — applies to editorial + filter-grid
     "collectionPageSize": "9",           # "3" | "6" | "9" — landing pagination size (cap 9)
     "featuredBentoLayout": "stack-right",  # stack-right | stack-left | top-hero | tri-equal
+
+    # ─── Featured slider ───
+    # `featuredSlides` is a JSON-encoded array of slide objects.
+    # `featuredSliderEnabled` is the master switch.
+    "featuredSlides": "",
+    "featuredSliderEnabled": "true",
+    "featuredSliderAutoplay": "true",
+    "featuredSliderInterval": "8000",
 
     # ─── Hero slider ───
     # `heroSlides` is a JSON-encoded array of slide objects (image + optional
@@ -227,16 +238,13 @@ DEFAULT_WINES = [
         varietal="Bordeaux Blend",
         region="Tulbagh",
         category="Red · Reserve",
-        alcohol="14.0%",
         description="Cabernet-led flagship. Bold, prestigious, unhurried.",
         tastingNotes="Cassis, graphite, dried bay leaf, and the faintest brush of cedar.",
         foodPairing="Slow-cooked lamb, aged hard cheese.",
+        alcoholPercentage="14.5%",
+        bottleCount="1,200 bottles",
         price=950.0,
         status="allocated",
-        image=(
-            "https://images.unsplash.com/photo-1547595628-c61a29f496f0"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=0,
     ),
     dict(
@@ -246,16 +254,13 @@ DEFAULT_WINES = [
         varietal="Syrah · Mourvèdre · Grenache",
         region="Tulbagh",
         category="Red",
-        alcohol="13.5%",
         description="Dark fruit, spice, and enduring complexity.",
         tastingNotes="Black cherry, white pepper, smoked thyme.",
         foodPairing="Charcuterie, duck breast.",
+        alcoholPercentage="14.0%",
+        bottleCount="2,400 bottles",
         price=580.0,
         status="available",
-        image=(
-            "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=1,
     ),
     dict(
@@ -265,16 +270,13 @@ DEFAULT_WINES = [
         varietal="Pinot Noir",
         region="Tulbagh",
         category="Red",
-        alcohol="12.5%",
         description="Delicate, refined, aromatic. Quiet conviction.",
         tastingNotes="Raspberry leaf, rose petal, wet stone.",
         foodPairing="Wild mushroom, roasted quail.",
+        alcoholPercentage="13.5%",
+        bottleCount="800 bottles",
         price=720.0,
         status="available",
-        image=(
-            "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=2,
     ),
     dict(
@@ -284,16 +286,13 @@ DEFAULT_WINES = [
         varietal="Pinotage",
         region="Tulbagh",
         category="Red",
-        alcohol="13.5%",
         description="Rooted, confident, unmistakably South African.",
         tastingNotes="Mulberry, dark chocolate, rooibos.",
         foodPairing="Braai, smoked brisket.",
+        alcoholPercentage="14.2%",
+        bottleCount="1,800 bottles",
         price=420.0,
         status="available",
-        image=(
-            "https://images.unsplash.com/photo-1568213816046-0ee1c42bd559"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=3,
     ),
     dict(
@@ -303,16 +302,13 @@ DEFAULT_WINES = [
         varietal="Chenin Blanc",
         region="Tulbagh",
         category="White",
-        alcohol="12.5%",
         description="A fresh, balanced expression of terroir.",
         tastingNotes="Quince, honeysuckle, sea salt.",
         foodPairing="Oysters, line-fish, fresh chèvre.",
+        alcoholPercentage="13.0%",
+        bottleCount="3,200 bottles",
         price=280.0,
         status="available",
-        image=(
-            "https://images.unsplash.com/photo-1592985731819-c2c80f3ad5dc"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=4,
     ),
     dict(
@@ -322,16 +318,14 @@ DEFAULT_WINES = [
         varietal="White Blend",
         region="Tulbagh",
         category="White",
-        alcohol="12.5%",
         description="Floral, bright, and quietly luminous.",
         tastingNotes="White peach, jasmine, lemon pith.",
         foodPairing="Summer salads, soft cheeses.",
+        alcoholPercentage="12.5%",
+        bottleCount="1,500 bottles",
         price=360.0,
+        stock=90,
         status="available",
-        image=(
-            "https://images.unsplash.com/photo-1474722883634-f73e64eda8b9"
-            "?w=1200&q=80&auto=format&fit=crop"
-        ),
         order=5,
     ),
 ]
@@ -452,6 +446,7 @@ def _seed_default_template(db: Session) -> None:
         "logoText", "logoImage", "logoFont",
         "landingTheme", "brandAccent", "navAnnouncement",
         "showAnnouncementBar", "showPhilosophy", "showVarietalRibbon",
+        "ribbonFormat", "ribbonText", "ribbonImages",
         "showFeaturedWine", "showEstateBand", "showExperience", "showClub",
     )
     rows = db.query(Config).filter(Config.key.in_(fields)).all()
@@ -509,3 +504,4 @@ def seed_defaults(db: Session) -> None:
     # Seed default template + activeTemplateId (idempotent — skips if templates
     # table already has rows; safe to run on every boot).
     _seed_default_template(db)
+

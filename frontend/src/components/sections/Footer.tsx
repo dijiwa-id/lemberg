@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import type { SiteConfig } from "../../lib/types";
 import { Wordmark } from "../Wordmark";
 import { resolveAsset } from "../../services/api";
@@ -8,6 +9,18 @@ interface FooterProps {
 }
 
 export function Footer({ config }: FooterProps) {
+  const [year, setYear] = useState(() => {
+    // If we're on the server, we might want a stable default.
+    // In an SPA, this runs on the first client paint anyway, but for
+    // hydration safety, returning a fixed string or null and then
+    // setting it in useEffect is the standard "safe" way.
+    return "";
+  });
+
+  useEffect(() => {
+    setYear(new Date().getFullYear().toString());
+  }, []);
+
   // Derive the established year from the editor's `Est. 1978` style value
   // instead of hard-coding it. Falls back to "1978" if the field is empty
   // or doesn't contain a four-digit year.
@@ -27,9 +40,8 @@ export function Footer({ config }: FooterProps) {
               layout="stacked"
               className="items-start"
             />
-            <p className="mt-10 max-w-sm body-editorial text-[var(--color-bone-400)]">
-              A small estate at the foot of the Witzenberg. Six wines a year,
-              made with quiet conviction since {estYear}.
+            <p className="mt-10 max-w-sm body-editorial text-[var(--color-bone-400)] whitespace-pre-wrap">
+              {config.footerTagline || `A small estate at the foot of the Witzenberg. Six wines a year, made with quiet conviction since ${estYear}.`}
             </p>
           </div>
 
@@ -130,7 +142,7 @@ export function Footer({ config }: FooterProps) {
 
         <div className="mt-20 flex flex-col items-start justify-between gap-4 border-t border-[var(--border-subtle)] pt-8 text-[var(--color-bone-500)] md:flex-row md:items-center">
           <p className="label-eyebrow">
-            © {new Date().getFullYear()} {brandName} Winery · All rights reserved
+            © {year || "2026"} {brandName} Winery · All rights reserved
           </p>
           <p className="label-eyebrow">Tulbagh Valley · Est. {estYear}</p>
         </div>

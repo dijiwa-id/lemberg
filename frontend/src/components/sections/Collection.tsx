@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
 import type { SiteConfig, Wine } from "../../lib/types";
 import { currencySymbol, wineDefaultImage } from "../../lib/types";
@@ -623,9 +623,7 @@ function buildFacets(wines: Wine[]): Facet[] {
   // top-to-bottom render order in the sidebar.
   const fields: Array<{ key: keyof Wine; label: string }> = [
     { key: "category", label: "Category" },
-    { key: "varietal", label: "Varietal" },
     { key: "region", label: "Region" },
-    { key: "vintage", label: "Vintage" },
     { key: "status", label: "Availability" },
   ];
   return fields
@@ -942,7 +940,7 @@ interface WineCardProps {
   compact?: boolean;
 }
 
-function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardProps) {
+const WineCard = memo(function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardProps) {
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -1051,4 +1049,4 @@ function WineCard({ wine, symbol, hovered, onHover, onOpen, compact }: WineCardP
       </div>
     </button>
   );
-}
+});

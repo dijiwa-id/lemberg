@@ -27,7 +27,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { TextField, SelectField, ImageField } from "./Field";
+import { TextField, SelectField, ImageField, RichTextField } from "./Field";
 import { ToggleField } from "./ToggleField";
 import {
   MENU_KIND_LABEL,
@@ -492,13 +492,10 @@ function ItemForm({
               onChange={(v) => onUpdate(item.id, { pageHeading: v })}
               placeholder="A long, quiet harvest."
             />
-            <TextField
+            <RichTextField
               label="Body"
-              multiline
-              rows={8}
               value={item.pageBody || ""}
               onChange={(v) => onUpdate(item.id, { pageBody: v })}
-              hint="Use two newlines for paragraph breaks."
             />
             <ImageField
               label="Hero image"

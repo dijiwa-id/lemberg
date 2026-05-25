@@ -11,38 +11,59 @@ export interface Wine {
    *  Sparkling, Reserve …). Replaced the `alcohol` field in the studio
    *  form; `alcohol` is kept on the model for backwards compatibility. */
   category?: string;
-  alcohol?: string;
   description?: string;
   tastingNotes?: string;
   foodPairing?: string;
+  bottleCount?: string;
+  alcoholPercentage?: string;
   price?: number;
+  stock?: number;
   status?: WineStatus | string;
-  /** Legacy single-image field; still used as fallback when `images` is empty. */
-  image?: string;
   /** Optional alternate (label-on-background). */
   labelImage?: string;
-  /** Editorial gallery. `images[0]` is the default shown on the landing card.
-   *  When empty, the legacy `image` field is the fallback. */
+  /** Cinematic hero settings per wine */
+  heroImage?: string;
+  heroImagePosition?: "center" | "left" | "right" | string;
+  overlayOpacity?: number;
+  enableReflection?: boolean;
+  enableBlurEffect?: boolean;
+  /** Editorial gallery. `images[0]` is the default shown on the landing card. */
   images?: string[];
   order?: number;
 }
 
 /** The image to display on the landing card / modal hero.
- *  Prefer `images[0]` (explicit editor choice), fall back to legacy `image`. */
+ *  Prefer `images[0]` (explicit editor choice). */
 export function wineDefaultImage(w: Wine | null | undefined): string {
   if (!w) return "";
   if (Array.isArray(w.images) && w.images.length > 0 && w.images[0]) {
     return w.images[0];
   }
-  return w.image || "";
+  return "";
 }
 
-/** Full gallery including the legacy image (de-duplicated) — for the modal. */
+/** Full gallery (de-duplicated) — for the modal. */
 export function wineGallery(w: Wine | null | undefined): string[] {
   if (!w) return [];
   const out = Array.isArray(w.images) ? w.images.filter(Boolean) : [];
-  if (out.length === 0 && w.image) return [w.image];
   return out;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  role: "admin" | "editor" | string;
+  isActive: boolean;
+}
+
+export interface AuditLog {
+  id: number;
+  timestamp: string;
+  username: string;
+  action: string;
+  target_type: string;
+  target_id?: string;
+  details?: string;
 }
 
 export interface SiteConfig {
@@ -64,6 +85,8 @@ export interface SiteConfig {
   philosophyHeadingItalic?: string;
   philosophyBody?: string;
   philosophyImage?: string;
+  philosophyImages?: string; // JSON array of string URLs for bento grid
+  philosophyLayout?: string; // "single" | "bento"
   philosophyEstYear?: string;
 
   collectionEyebrow?: string;
@@ -72,12 +95,17 @@ export interface SiteConfig {
 
   featuredWineId?: string | number;
   featuredHeading?: string;
+  featuredSubtitle?: string;
   featuredBody?: string;
-  featuredImage?: string;                  // primary bento slot — overrides wine.image
-  featuredImageAccent1?: string;           // bento top-right
-  featuredImageAccent2?: string;           // bento bottom-right
-  featuredImageAccent1Caption?: string;
-  featuredImageAccent2Caption?: string;
+  featuredImage?: string;                  // fallback cinematic image — overrides wine.heroImage if set
+  featuredHeroImagePosition?: string;
+  featuredOverlayOpacity?: string;
+  featuredEnableReflection?: string;
+  featuredEnableBlurEffect?: string;
+  featuredCtaPrimary?: string;
+  featuredCtaSecondary?: string;
+  featuredSeoTitle?: string;
+  featuredSeoDescription?: string;
   featuredEyebrow?: string;
 
   estateHeading?: string;
@@ -90,6 +118,8 @@ export interface SiteConfig {
   experienceItalic?: string;
   experienceBody?: string;
   experienceImage?: string;
+  experienceImages?: string; // JSON array of string URLs for bento grid
+  experienceLayout?: string; // "single" | "bento"
   experienceCta?: string;
   experienceCtaEmail?: string;     // mailto target — falls back to footerEmail
   experienceHours?: string;        // e.g. "Tue–Sat · 10:00 — 16:00"
@@ -116,6 +146,7 @@ export interface SiteConfig {
   footerEmail?: string;
   footerPhone?: string;
   footerInstagram?: string;
+  footerTagline?: string;
 
   /* ─────────────────────────────────────────────────────────────────
      Application-wide settings (Settings page)
@@ -140,6 +171,10 @@ export interface SiteConfig {
   showAnnouncementBar?: string;
   showPhilosophy?: string;
   showVarietalRibbon?: string;
+  ribbonFormat?: string; // "text" | "image"
+  ribbonText?: string;
+  ribbonImage?: string; // legacy single image
+  ribbonImages?: string; // JSON array of string URLs
   showFeaturedWine?: string;
   showEstateBand?: string;
   showExperience?: string;
@@ -184,6 +219,14 @@ export interface SiteConfig {
   heroSliderAnimation?: string;         // fade | slide | kenburns | stack
   heroSliderAutoplay?: string;          // "true" / "false"
   heroSliderInterval?: string;          // ms (numeric string)
+
+  // ─── Featured slider ───
+  // `featuredSlides` is a JSON-encoded array — see FeaturedSlide / parseFeaturedSlides
+  // below. If empty, the section can fall back to the top 2 wines.
+  featuredSlides?: string;
+  featuredSliderEnabled?: string;       // "true" / "false"
+  featuredSliderAutoplay?: string;      // "true" / "false"
+  featuredSliderInterval?: string;      // ms (numeric string)
 
   // ─── Age verification gate ───
   // Compliance pop-up shown to public visitors. Stored confirmation lives
@@ -235,6 +278,10 @@ const TOGGLE_KEYS: ReadonlySet<keyof SiteConfig> = new Set([
   "showExperience",
   "showClub",
   "maintenanceMode",
+  "featuredEnableReflection",
+  "featuredEnableBlurEffect",
+  "featuredSliderEnabled",
+  "featuredSliderAutoplay",
 ]);
 
 /**
@@ -592,15 +639,18 @@ export const FALLBACK_CONFIG: SiteConfig = {
 
   featuredEyebrow: "Flagship release",
   featuredHeading: "Lemberg Louis",
+  featuredSubtitle: "Flagship Bordeaux-style blend",
   featuredBody:
     "Our flagship Bordeaux-style red. Built on Cabernet Sauvignon from the home block, with parcels of Merlot and Cabernet Franc from older vines. Twenty-two months in French oak. A wine of slow conversations and longer evenings.",
   featuredImage: "",
-  featuredImageAccent1:
-    "https://images.unsplash.com/photo-1543418219-44e30b057fea?w=1200&q=80&auto=format&fit=crop",
-  featuredImageAccent2:
-    "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=1200&q=80&auto=format&fit=crop",
-  featuredImageAccent1Caption: "In the cellar",
-  featuredImageAccent2Caption: "From the home block",
+  featuredHeroImagePosition: "center",
+  featuredOverlayOpacity: "0.1",
+  featuredEnableReflection: "true",
+  featuredEnableBlurEffect: "false",
+  featuredCtaPrimary: "Reserve a bottle",
+  featuredCtaSecondary: "Explore collection",
+  featuredSeoTitle: "Featured Release — Lemberg Winery",
+  featuredSeoDescription: "Discover our latest flagship release, handcrafted with quiet conviction.",
 
   estateEyebrow: "The valley",
   estateHeading: "Where the morning mist meets the granite.",
@@ -642,6 +692,7 @@ export const FALLBACK_CONFIG: SiteConfig = {
   footerEmail: "info@lemberg.co.za",
   footerPhone: "+27 23 230 0735",
   footerInstagram: "@lembergwinery",
+  footerTagline: "A small estate at the foot of the Witzenberg. Six wines a year, made with quiet conviction since 1978.",
 
   // Settings defaults
   siteDescription:
@@ -657,6 +708,10 @@ export const FALLBACK_CONFIG: SiteConfig = {
   showAnnouncementBar: "true",
   showPhilosophy: "true",
   showVarietalRibbon: "true",
+  ribbonFormat: "text",
+  ribbonText: "Cabernet Sauvignon · Pinotage · Chenin Blanc · Pinot Noir · Syrah · Hárslevelű · Mourvèdre · Grenache · Cabernet Franc · Merlot",
+  ribbonImage: "",
+  ribbonImages: "[]",
   showFeaturedWine: "true",
   showEstateBand: "true",
   showExperience: "true",
@@ -680,6 +735,12 @@ export const FALLBACK_CONFIG: SiteConfig = {
   collectionColumns: "3",
   collectionPageSize: "9",
   featuredBentoLayout: "stack-right",
+
+  // Featured slider
+  featuredSlides: "",
+  featuredSliderEnabled: "true",
+  featuredSliderAutoplay: "true",
+  featuredSliderInterval: "8000",
 
   // Hero slider — empty slides → legacy single-image hero
   heroSlides: "",
@@ -713,15 +774,15 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "Bordeaux Blend",
     region: "Tulbagh",
     category: "Red · Reserve",
-    alcohol: "14.0%",
     description: "Cabernet-led flagship. Bold, prestigious, unhurried.",
     tastingNotes:
       "Cassis, graphite, dried bay leaf and the faintest brush of cedar.",
     foodPairing: "Slow-cooked lamb, aged hard cheese.",
     price: 950,
     status: "allocated",
-    image:
-      "https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 0,
   },
   {
@@ -732,14 +793,14 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "Syrah · Mourvèdre · Grenache",
     region: "Tulbagh",
     category: "Red",
-    alcohol: "13.5%",
     description: "Dark fruit, spice, and enduring complexity.",
     tastingNotes: "Black cherry, white pepper, smoked thyme.",
     foodPairing: "Charcuterie, duck breast.",
     price: 580,
     status: "available",
-    image:
-      "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 1,
   },
   {
@@ -750,14 +811,14 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "Pinot Noir",
     region: "Tulbagh",
     category: "Red",
-    alcohol: "12.5%",
     description: "Delicate, refined, aromatic. Quiet conviction.",
     tastingNotes: "Raspberry leaf, rose petal, wet stone.",
     foodPairing: "Wild mushroom, roasted quail.",
     price: 720,
     status: "available",
-    image:
-      "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 2,
   },
   {
@@ -768,14 +829,14 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "Pinotage",
     region: "Tulbagh",
     category: "Red",
-    alcohol: "13.5%",
     description: "Rooted, confident, unmistakably South African.",
     tastingNotes: "Mulberry, dark chocolate, rooibos.",
     foodPairing: "Braai, smoked brisket.",
     price: 420,
     status: "available",
-    image:
-      "https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 3,
   },
   {
@@ -786,14 +847,14 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "Chenin Blanc",
     region: "Tulbagh",
     category: "White",
-    alcohol: "12.5%",
     description: "A fresh, balanced expression of terroir.",
     tastingNotes: "Quince, honeysuckle, sea salt.",
     foodPairing: "Oysters, line-fish, fresh chèvre.",
     price: 280,
     status: "available",
-    image:
-      "https://images.unsplash.com/photo-1592985731819-c2c80f3ad5dc?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1592985731819-c2c80f3ad5dc?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 4,
   },
   {
@@ -804,14 +865,14 @@ export const FALLBACK_WINES: Wine[] = [
     varietal: "White Blend",
     region: "Tulbagh",
     category: "White",
-    alcohol: "12.5%",
     description: "Floral, bright, and quietly luminous.",
     tastingNotes: "White peach, jasmine, lemon pith.",
     foodPairing: "Summer salads, soft cheeses.",
     price: 360,
     status: "available",
-    image:
-      "https://images.unsplash.com/photo-1474722883634-f73e64eda8b9?w=1200&q=80&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1474722883634-f73e64eda8b9?w=1200&q=80&auto=format&fit=crop"
+    ],
     order: 5,
   },
 ];
@@ -868,6 +929,21 @@ export function parseHeroSlides(raw: string | undefined | null): HeroSlide[] {
   }
 }
 
+export function parseRibbonImages(raw: string | undefined | null): string[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => typeof s === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function serializeRibbonImages(images: string[]): string {
+  return JSON.stringify(images.filter((s) => typeof s === "string"));
+}
+
 /** Symmetric serializer — preserves draft slides (those without an image)
  *  so the admin's list survives a save/refetch round-trip while the editor
  *  is mid-edit. The public section filters them out via `isRenderableSlide`
@@ -918,4 +994,83 @@ export function resolveSlideContent(
     ctaLabel: slide.ctaLabel || config.heroCta || "View the collection",
     ctaHref: slide.ctaHref || "#collection",
   };
+}
+
+export function parseBentoImages(raw: string | undefined | null): string[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => typeof s === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function serializeBentoImages(images: string[]): string {
+  return JSON.stringify(images.filter((s) => typeof s === "string"));
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Featured slider
+   ───────────────────────────────────────────────────────────────────── */
+
+/** A single slide in the Featured Wine section. 
+ *  `wineId` can be used to link to an existing wine's data.
+ *  If text fields are blank, they can fall back to the linked wine's data or global config. */
+export interface FeaturedSlide {
+  wineId?: string | number;
+  image?: string;
+  eyebrow?: string;
+  heading?: string;
+  subtitle?: string;
+  body?: string;
+  ctaPrimary?: string;
+  ctaSecondary?: string;
+}
+
+export function parseFeaturedSlides(raw: string | undefined | null): FeaturedSlide[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (s): s is Record<string, unknown> =>
+          s !== null && typeof s === "object" && !Array.isArray(s)
+      )
+      .map((s) => ({
+        wineId: s.wineId as string | number | undefined,
+        image: typeof s.image === "string" ? s.image : undefined,
+        eyebrow: typeof s.eyebrow === "string" ? s.eyebrow : undefined,
+        heading: typeof s.heading === "string" ? s.heading : undefined,
+        subtitle: typeof s.subtitle === "string" ? s.subtitle : undefined,
+        body: typeof s.body === "string" ? s.body : undefined,
+        ctaPrimary: typeof s.ctaPrimary === "string" ? s.ctaPrimary : undefined,
+        ctaSecondary: typeof s.ctaSecondary === "string" ? s.ctaSecondary : undefined,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export function serializeFeaturedSlides(slides: FeaturedSlide[]): string {
+  const clean = slides.map((s) => {
+    const out: FeaturedSlide = {};
+    if (s.wineId) out.wineId = s.wineId;
+    if (s.image && s.image.trim().length > 0) out.image = s.image.trim();
+    if (s.eyebrow && s.eyebrow.trim().length > 0) out.eyebrow = s.eyebrow;
+    if (s.heading && s.heading.trim().length > 0) out.heading = s.heading;
+    if (s.subtitle && s.subtitle.trim().length > 0) out.subtitle = s.subtitle;
+    if (s.body && s.body.trim().length > 0) out.body = s.body;
+    if (s.ctaPrimary && s.ctaPrimary.trim().length > 0) out.ctaPrimary = s.ctaPrimary;
+    if (s.ctaSecondary && s.ctaSecondary.trim().length > 0) out.ctaSecondary = s.ctaSecondary;
+    return out;
+  });
+  return clean.length > 0 ? JSON.stringify(clean) : "";
+}
+
+export function isRenderableFeaturedSlide(slide: FeaturedSlide): boolean {
+  // A slide is renderable if it has a wineId OR an image
+  return Boolean((slide.wineId) || (slide.image && slide.image.trim().length > 0));
 }

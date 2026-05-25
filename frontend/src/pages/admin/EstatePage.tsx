@@ -1,6 +1,6 @@
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { ImageField, TextField } from "../../components/admin/Field";
+import { ImageField, TextField, RichTextField } from "../../components/admin/Field";
 import type { AdminContext } from "../Admin";
 
 export function EstatePage({ ctx }: { ctx: AdminContext }) {
@@ -29,10 +29,8 @@ export function EstatePage({ ctx }: { ctx: AdminContext }) {
               onChange={(v) => update({ estateHeading: v })}
               hint="Use a line break for two-line layout"
             />
-            <TextField
+            <RichTextField
               label="Body"
-              multiline
-              rows={4}
               value={config.estateBody || ""}
               onChange={(v) => update({ estateBody: v })}
             />

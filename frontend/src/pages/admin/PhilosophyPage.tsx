@@ -1,10 +1,19 @@
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { ImageField, TextField } from "../../components/admin/Field";
+import { ImageField, TextField, RichTextField } from "../../components/admin/Field";
 import type { AdminContext } from "../Admin";
 
 export function PhilosophyPage({ ctx }: { ctx: AdminContext }) {
-  const { config, update } = ctx;
+  const { config, update, loading } = ctx;
+
+  if (loading || !config) {
+    return (
+      <div className="flex h-[40vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-pearl-300)] border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -35,13 +44,10 @@ export function PhilosophyPage({ ctx }: { ctx: AdminContext }) {
                   onChange={(v) => update({ philosophyHeadingItalic: v })}
                   placeholder="Guided by the season."
                 />
-                <TextField
+                <RichTextField
                   label="Body"
-                  multiline
-                  rows={8}
                   value={config.philosophyBody || ""}
                   onChange={(v) => update({ philosophyBody: v })}
-                  hint="Use two newlines to separate paragraphs."
                 />
                 <TextField
                   label="Established label"

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from app.api.utils import log_action
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.models import Subscriber, User
@@ -57,7 +58,7 @@ def create_subscriber(request: Request, payload: SubscriberCreate, db: Session =
 @router.get("/subscribers", response_model=List[SubscriberResponse])
 def list_subscribers(
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     return db.query(Subscriber).order_by(Subscriber.id.desc()).all()
 
@@ -66,11 +67,15 @@ def list_subscribers(
 def delete_subscriber(
     sid: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     row = db.query(Subscriber).filter(Subscriber.id == sid).first()
     if not row:
         raise HTTPException(status_code=404, detail="Subscriber not found")
+
+    log_action(db, user.username, "DELETE", "subscriber", str(sid), f"Deleted subscriber: {row.email}")
+
     db.delete(row)
     db.commit()
     return {"success": True}
+

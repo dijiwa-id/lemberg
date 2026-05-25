@@ -10,6 +10,7 @@ interface ImageRevealProps {
   aspectClass?: string;
   parallax?: boolean;
   priority?: boolean;
+  delay?: number;
 }
 
 /**
@@ -32,6 +33,7 @@ export function ImageReveal({
   aspectClass = "aspect-[4/5]",
   parallax = true,
   priority = false,
+  delay = 0,
 }: ImageRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.1 });
@@ -65,7 +67,7 @@ export function ImageReveal({
               ? { clipPath: "inset(0 0% 0 0)" }
               : { clipPath: "inset(0 100% 0 0)" }
           }
-          transition={{ duration: 1.4, ease: [0.65, 0, 0.35, 1] }}
+          transition={{ duration: 1.4, ease: [0.65, 0, 0.35, 1], delay }}
           className="absolute inset-0 will-change-transform"
         >
           <motion.img

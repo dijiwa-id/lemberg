@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { SiteConfig } from "../../lib/types";
+import { parseBentoImages } from "../../lib/types";
 import { resolveAsset } from "../../services/api";
 import { Reveal, RevealLines } from "../motion/Reveal";
 import { ImageReveal } from "../motion/ImageReveal";
@@ -9,14 +10,33 @@ interface ExperienceProps {
 }
 
 export function Experience({ config }: ExperienceProps) {
-  // Build the small facts grid from individual config keys. Each fact is a
-  // [label, value] pair and is rendered only when its value is non-empty,
-  // so editors can hide a row by clearing it in the studio.
-  const facts: Array<[string, string | undefined]> = [
-    ["Hours", config.experienceHours],
-    ["Tasting", config.experienceTasting],
-    ["Booking", config.experienceBooking],
-  ].filter(([, v]) => Boolean(v && v.trim())) as Array<[string, string]>;
+  const isBento = config.experienceLayout === "bento";
+  const bentoImages = parseBentoImages(config.experienceImages);
+
+  // Build the small facts grid. 'Hours' can now be a multiline string (via ListField
+  // in the admin), so we parse it into a flat list of entries to display.
+  const hourLines = (config.experienceHours || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const facts: Array<{ label: string; value: string }> = [];
+  
+  if (hourLines.length > 0) {
+    hourLines.forEach((line, i) => {
+      facts.push({
+        label: i === 0 ? "Hours" : "",
+        value: line,
+      });
+    });
+  }
+
+  if (config.experienceTasting?.trim()) {
+    facts.push({ label: "Tasting", value: config.experienceTasting });
+  }
+  if (config.experienceBooking?.trim()) {
+    facts.push({ label: "Booking", value: config.experienceBooking });
+  }
 
   // CTA email: prefer the section-specific override, then the footer email.
   const ctaEmail =
@@ -30,17 +50,21 @@ export function Experience({ config }: ExperienceProps) {
       className="relative border-t border-[var(--border-subtle)] bg-[var(--color-ink-900)] px-6 py-32 md:px-10 md:py-44"
     >
       <div className="mx-auto max-w-[1480px]">
-        <div className="grid gap-16 md:grid-cols-12 md:gap-20">
-          <div className="md:col-span-6 md:col-start-1 md:row-start-1">
-            <ImageReveal
-              src={resolveAsset(config.experienceImage)}
-              alt="Tasting experience"
-              aspectClass="aspect-[5/6]"
-              className="shadow-product"
-            />
+        <div className="grid gap-16 lg:grid-cols-12 lg:gap-24 items-center">
+          <div className={isBento ? "lg:col-span-7" : "lg:col-span-6 lg:col-start-1"}>
+            {isBento && bentoImages.length > 0 ? (
+              <BentoGrid images={bentoImages} />
+            ) : (
+              <ImageReveal
+                src={resolveAsset(config.experienceImage)}
+                alt="Tasting experience"
+                aspectClass="aspect-[5/6]"
+                className="shadow-product"
+              />
+            )}
           </div>
 
-          <div className="md:col-span-5 md:col-start-8 md:row-start-1 md:self-center">
+          <div className={isBento ? "lg:col-span-5" : "lg:col-span-5 lg:col-start-8"}>
             <Reveal y={12} className="mb-8 flex items-center gap-4">
               <span className="block h-px w-10 bg-[var(--color-pearl-300)]/60" />
               <span className="label-eyebrow text-[var(--color-bone-400)]">
@@ -62,7 +86,10 @@ export function Experience({ config }: ExperienceProps) {
 
             {config.experienceBody && (
               <Reveal y={16} delay={0.2} className="mt-10 max-w-md">
-                <p className="body-editorial">{config.experienceBody}</p>
+                <div
+                  className="body-editorial"
+                  dangerouslySetInnerHTML={{ __html: config.experienceBody }}
+                />
               </Reveal>
             )}
 
@@ -72,16 +99,16 @@ export function Experience({ config }: ExperienceProps) {
                 delay={0.32}
                 className="mt-10 flex flex-col gap-3 border-t border-[var(--border-subtle)] pt-6"
               >
-                {facts.map(([label, value]) => (
+                {facts.map((fact, idx) => (
                   <div
-                    key={label}
+                    key={idx}
                     className="flex items-center justify-between gap-6"
                   >
                     <span className="label-eyebrow text-[var(--color-bone-500)]">
-                      {label}
+                      {fact.label}
                     </span>
                     <span className="text-sm text-[var(--color-bone-200)]">
-                      {value}
+                      {fact.value}
                     </span>
                   </div>
                 ))}
@@ -116,5 +143,54 @@ export function Experience({ config }: ExperienceProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+function BentoGrid({ images }: { images: string[] }) {
+  const displayImages = images.slice(0, 4);
+  
+  return (
+    <div className="grid grid-cols-12 gap-4">
+      {displayImages[0] && (
+        <div className="col-span-8 row-span-2">
+          <ImageReveal
+            src={resolveAsset(displayImages[0])}
+            alt=""
+            aspectClass="aspect-square"
+            className="shadow-2xl"
+          />
+        </div>
+      )}
+      {displayImages[1] && (
+        <div className="col-span-4 self-end">
+          <ImageReveal
+            src={resolveAsset(displayImages[1])}
+            alt=""
+            aspectClass="aspect-[4/5]"
+            delay={0.15}
+          />
+        </div>
+      )}
+      {displayImages[2] && (
+        <div className="col-span-4">
+          <ImageReveal
+            src={resolveAsset(displayImages[2])}
+            alt=""
+            aspectClass="aspect-square"
+            delay={0.3}
+          />
+        </div>
+      )}
+      {displayImages[3] && (
+        <div className="col-span-12 mt-4">
+          <ImageReveal
+            src={resolveAsset(displayImages[3])}
+            alt=""
+            aspectClass="aspect-[21/9]"
+            delay={0.45}
+          />
+        </div>
+      )}
+    </div>
   );
 }

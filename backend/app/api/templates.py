@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.utils import log_action
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.models import Config, Template, User
@@ -53,6 +54,9 @@ TEMPLATE_FIELDS = (
     "showAnnouncementBar",
     "showPhilosophy",
     "showVarietalRibbon",
+    "ribbonFormat",
+    "ribbonText",
+    "ribbonImages",
     "showFeaturedWine",
     "showEstateBand",
     "showExperience",
@@ -121,7 +125,7 @@ def _unique_name(base: str, taken: set[str], suffix_word: str = "copy") -> str:
 @router.get("/templates", response_model=List[TemplateResponse])
 def list_templates(
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Studio template library. Sorted newest-first."""
     return db.query(Template).order_by(Template.updatedAt.desc()).all()
@@ -131,7 +135,7 @@ def list_templates(
 def create_template(
     payload: TemplateCreate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Create a template from a client-supplied payload (e.g. importing a
     template from elsewhere or building one programmatically). For the
@@ -150,6 +154,10 @@ def create_template(
     db.add(row)
     db.commit()
     db.refresh(row)
+    
+    log_action(db, user.username, "CREATE", "template", str(row.id), f"Created template: {name}")
+    db.commit()
+    
     return row
 
 
@@ -157,7 +165,7 @@ def create_template(
 def snapshot_current(
     payload: TemplateCreate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Snapshot the LIVE config into a new template — the most common path.
     Client supplies name + description; server pulls TEMPLATE_FIELDS from
@@ -176,6 +184,10 @@ def snapshot_current(
     db.add(row)
     db.commit()
     db.refresh(row)
+    
+    log_action(db, user.username, "CREATE", "template", str(row.id), f"Snapshotted current look as: {name}")
+    db.commit()
+    
     return row
 
 
@@ -184,7 +196,7 @@ def update_template(
     tid: int,
     patch: TemplateUpdate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Rename, re-describe, or replace the payload of an existing template."""
     row = db.query(Template).filter(Template.id == tid).first()
@@ -201,6 +213,9 @@ def update_template(
         row.payload = _sanitize_payload(patch.payload)
 
     row.updatedAt = _now()
+    
+    log_action(db, user.username, "UPDATE", "template", str(tid), f"Updated template: {row.name}")
+    
     db.commit()
     db.refresh(row)
     return row
@@ -210,7 +225,7 @@ def update_template(
 def apply_template(
     tid: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Apply a template — copy its payload fields onto the live `configs`
     table, leaving non-template fields (page copy, SEO, footer) untouched.
@@ -236,6 +251,9 @@ def apply_template(
             existing.value = value
         else:
             db.add(Config(key=key, value=value))
+            
+    log_action(db, user.username, "UPDATE", "template", str(tid), f"Applied template: {row.name}")
+    
     db.commit()
     return write_set
 
@@ -244,7 +262,7 @@ def apply_template(
 def import_templates(
     payload: TemplateImportRequest,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Bulk-import templates from an exported bundle.
 
@@ -303,6 +321,8 @@ def import_templates(
         db.add(row)
         created.append(row)
 
+    log_action(db, user.username, "CREATE", "template", "bulk-import", f"Imported {len(created)} templates.")
+    
     db.commit()
     for row in created:
         db.refresh(row)
@@ -313,7 +333,7 @@ def import_templates(
 def duplicate_template(
     tid: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Clone an existing template under a "(copy)" suffix. Useful when an
     editor wants to fork a template before tweaking — keeps the original
@@ -337,6 +357,10 @@ def duplicate_template(
     db.add(row)
     db.commit()
     db.refresh(row)
+    
+    log_action(db, user.username, "CREATE", "template", str(row.id), f"Duplicated template {tid} as: {name}")
+    db.commit()
+    
     return row
 
 
@@ -344,12 +368,13 @@ def duplicate_template(
 def delete_template(
     tid: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     row = db.query(Template).filter(Template.id == tid).first()
     if not row:
         raise HTTPException(status_code=404, detail="Template not found.")
 
+    name = row.name
     # If this was the active template, clear the marker so the studio
     # doesn't end up pointing at a deleted row.
     was_active = False
@@ -361,5 +386,8 @@ def delete_template(
         was_active = True
 
     db.delete(row)
+    
+    log_action(db, user.username, "DELETE", "template", str(tid), f"Deleted template: {name}")
+    
     db.commit()
     return {"success": True, "wasActive": was_active}

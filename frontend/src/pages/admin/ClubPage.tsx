@@ -1,6 +1,6 @@
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { TextField } from "../../components/admin/Field";
+import { TextField, RichTextField } from "../../components/admin/Field";
 import type { AdminContext } from "../Admin";
 
 export function ClubPage({ ctx }: { ctx: AdminContext }) {
@@ -27,10 +27,8 @@ export function ClubPage({ ctx }: { ctx: AdminContext }) {
               onChange={(v) => update({ clubHeading: v })}
               placeholder="Join the club."
             />
-            <TextField
+            <RichTextField
               label="Body"
-              multiline
-              rows={3}
               value={config.clubBody || ""}
               onChange={(v) => update({ clubBody: v })}
             />

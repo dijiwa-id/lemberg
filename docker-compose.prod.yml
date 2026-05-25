@@ -8,9 +8,9 @@ services:
       LEMBERG_CORS_ORIGINS: ${LEMBERG_CORS_ORIGINS}
       LEMBERG_DATABASE_URL: ${LEMBERG_DATABASE_URL:-sqlite:////data/cms.db}
       LEMBERG_LOG_LEVEL: ${LEMBERG_LOG_LEVEL:-INFO}
-      LEMBERG_VERSION: ${LEMBERG_VERSION:-1.1.0}
+      LEMBERG_VERSION: ${LEMBERG_VERSION:-1.5.0}
       LEMBERG_ENV: production
-      LEMBERG_SHOW_DOCS: "false"
+      LEMBERG_DOCS_ENABLED: "false"
     volumes:
       - lemberg_db:/data           # DB persisted (Postgres-ready)
       - ./backend/cms.db:/data/cms.db

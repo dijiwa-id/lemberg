@@ -32,7 +32,6 @@ import { useToast } from "../../lib/toast";
 import {
   describeTemplate,
   type Template,
-  type TemplatePayload,
 } from "../../lib/types";
 import {
   downloadBundle,

@@ -31,6 +31,11 @@ import {
   writeCachedMenu,
 } from "../lib/dataCache";
 
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, "").trim();
+}
+
 export default function DynamicPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   // Read from the cross-page cache so the header / footer / theme render
@@ -90,7 +95,7 @@ export default function DynamicPage() {
         ...config,
         metaTitle: `${page.pageHeading || page.label} — ${config.logoText || "Lemberg"}`,
         metaDescription:
-          page.pageBody?.split("\n\n")[0]?.slice(0, 160) ||
+          stripHtml(page.pageBody || "").slice(0, 160) ||
           config.siteDescription,
       }
     : config;
@@ -205,20 +210,12 @@ export default function DynamicPage() {
             )}
 
             {page.pageBody && (
-              <div className="max-w-[680px]">
-                {page.pageBody.split(/\n{2,}/).map((para, i) => (
-                  <Reveal
-                    key={i}
-                    y={14}
-                    delay={0.06 + i * 0.06}
-                    className="mt-6 first:mt-0"
-                  >
-                    <p className="body-editorial whitespace-pre-line text-[var(--color-bone-200)]">
-                      {para}
-                    </p>
-                  </Reveal>
-                ))}
-              </div>
+              <Reveal y={14} delay={0.06} className="max-w-[680px]">
+                <div
+                  className="body-editorial text-[var(--color-bone-200)]"
+                  dangerouslySetInnerHTML={{ __html: page.pageBody }}
+                />
+              </Reveal>
             )}
 
             {/* Sibling pages — surface other pages under the same parent */}
@@ -305,7 +302,7 @@ function RelatedPages({
               </p>
               {s.pageBody && (
                 <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--color-bone-400)]">
-                  {s.pageBody.split("\n")[0]}
+                  {stripHtml(s.pageBody)}
                 </p>
               )}
               <span className="mt-4 inline-block label-eyebrow text-[var(--color-bone-300)] transition-colors group-hover:text-[var(--color-pearl-300)]">
@@ -330,10 +327,10 @@ function MaintenancePlaceholder({ config }: { config: SiteConfig }) {
         <h1 className="mt-6 font-display text-4xl font-light italic text-[var(--color-pearl-300)]">
           A quiet pause.
         </h1>
-        <p className="mt-6 body-editorial text-[var(--color-bone-300)]">
-          {config.maintenanceMessage ||
-            "The cellar is closed for a moment. Please check back shortly."}
-        </p>
+        <div
+          className="mt-6 body-editorial text-[var(--color-bone-300)]"
+          dangerouslySetInnerHTML={{ __html: config.maintenanceMessage || "The cellar is closed for a moment. Please check back shortly." }}
+        />
       </div>
     </div>
   );

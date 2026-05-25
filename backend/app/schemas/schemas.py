@@ -5,11 +5,32 @@ from typing import List, Optional
 class UserCreate(BaseModel):
     username: str
     password: str
+    role: Optional[str] = "admin"
+
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    isActive: Optional[bool] = None
 
 
 class UserResponse(BaseModel):
     id: int
     username: str
+    role: str
+    isActive: bool
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    timestamp: str
+    username: str
+    action: str
+    target_type: str
+    target_id: Optional[str] = None
+    details: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -30,14 +51,20 @@ class WineBase(BaseModel):
     varietal: Optional[str] = None
     region: Optional[str] = None
     category: Optional[str] = None
-    alcohol: Optional[str] = None
     description: Optional[str] = None
     tastingNotes: Optional[str] = None
     foodPairing: Optional[str] = None
+    bottleCount: Optional[str] = None
+    alcoholPercentage: Optional[str] = None
     price: Optional[float] = 0.0
+    stock: Optional[int] = None
     status: Optional[str] = "available"
-    image: Optional[str] = None
     labelImage: Optional[str] = None
+    heroImage: Optional[str] = None
+    heroImagePosition: Optional[str] = "center"
+    overlayOpacity: Optional[float] = 0.0
+    enableReflection: Optional[bool] = False
+    enableBlurEffect: Optional[bool] = False
     images: Optional[List[str]] = None
     order: Optional[int] = 0
 
@@ -54,14 +81,20 @@ class WineUpdate(BaseModel):
     varietal: Optional[str] = None
     region: Optional[str] = None
     category: Optional[str] = None
-    alcohol: Optional[str] = None
     description: Optional[str] = None
     tastingNotes: Optional[str] = None
     foodPairing: Optional[str] = None
+    bottleCount: Optional[str] = None
+    alcoholPercentage: Optional[str] = None
     price: Optional[float] = None
+    stock: Optional[int] = None
     status: Optional[str] = None
-    image: Optional[str] = None
     labelImage: Optional[str] = None
+    heroImage: Optional[str] = None
+    heroImagePosition: Optional[str] = None
+    overlayOpacity: Optional[float] = None
+    enableReflection: Optional[bool] = None
+    enableBlurEffect: Optional[bool] = None
     images: Optional[List[str]] = None
     order: Optional[int] = None
 

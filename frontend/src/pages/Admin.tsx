@@ -2,19 +2,18 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import {
   errorMessage,
-  fetchConfig,
-  fetchWines,
   saveConfig,
   createWine,
   updateWine,
   deleteWine,
+  reorderWines,
 } from "../services/api";
 import {
   FALLBACK_CONFIG,
   FALLBACK_WINES,
-  mergeRemoteConfig,
   type SiteConfig,
   type Wine,
+  type User,
 } from "../lib/types";
 import { ToastProvider, useToast } from "../lib/toast";
 import { cacheBrand } from "../lib/brandCache";
@@ -24,6 +23,7 @@ import { Dashboard } from "./admin/Dashboard";
 import { BrandPage } from "./admin/BrandPage";
 import { HeroPage } from "./admin/HeroPage";
 import { PhilosophyPage } from "./admin/PhilosophyPage";
+import { RibbonPage } from "./admin/RibbonPage";
 import { CollectionPage } from "./admin/CollectionPage";
 import { FeaturedPage } from "./admin/FeaturedPage";
 import { EstatePage } from "./admin/EstatePage";
@@ -36,10 +36,15 @@ import { MenuPage } from "./admin/MenuPage";
 import { TemplatesPage } from "./admin/TemplatesPage";
 import { StudioPage } from "./admin/StudioPage";
 import { AgeGatePage } from "./admin/AgeGatePage";
+import { UsersPage } from "./admin/UsersPage";
+import { AuditPage } from "./admin/AuditPage";
+import { useAuth } from "../lib/auth";
+import { useSiteData } from "../lib/useSiteData";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
 export interface AdminContext {
+  user: User | null;
   config: SiteConfig;
   wines: Wine[];
   loading: boolean;
@@ -68,43 +73,28 @@ export default function Admin() {
 
 function AdminShell() {
   const toast = useToast();
+  const { user } = useAuth();
+  const { config: remoteConfig, wines: remoteWines, loading, error } = useSiteData();
+
   const [config, setConfig] = useState<SiteConfig>(FALLBACK_CONFIG);
   const [wines, setWines] = useState<Wine[]>(FALLBACK_WINES);
-  const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [c, w] = await Promise.all([fetchConfig(), fetchWines()]);
-        if (!alive) return;
-        if (c && Object.keys(c).length > 0) {
-          const merged = mergeRemoteConfig(c);
-          setConfig(merged);
-          cacheBrand(merged);
-          cacheStudio(merged);
-        }
-        if (Array.isArray(w) && w.length > 0) {
-          setWines([...w].sort((a, b) => (a.order || 0) - (b.order || 0)));
-        }
-      } catch (e) {
-        // Backend offline — fallback config keeps the editor usable. Surface
-        // a soft warning so the editor knows changes won't persist yet.
-        toast.error(
-          "Could not reach the studio API",
-          errorMessage(e, "Working from local defaults until the server reconnects.")
-        );
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+    if (remoteConfig) setConfig(remoteConfig);
+    if (remoteWines) setWines(remoteWines);
+  }, [remoteConfig, remoteWines]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(
+        "Could not reach the studio API",
+        errorMessage(error, "Working from local defaults until the server reconnects.")
+      );
+    }
+  }, [error, toast]);
 
   const update = (patch: Partial<SiteConfig>) => {
     setConfig((c) => ({ ...c, ...patch }));
@@ -161,59 +151,66 @@ function AdminShell() {
       status: "available",
       price: 0,
       order: wines.length,
-      image:
-        "https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=1200&q=80&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=1200&q=80&auto=format&fit=crop"
+      ],
     };
     try {
       const saved = await createWine(next);
       setWines((ws) => [...ws, saved]);
       toast.success("Wine added", `${saved.name} is now in the collection.`);
     } catch (e) {
-      // Optimistic local id so the editor keeps working; flag the failure.
-      const localId = `local-${Date.now()}`;
-      setWines((ws) => [...ws, { ...(next as Wine), id: localId }]);
       toast.error("Could not save the new wine", errorMessage(e));
     }
   }
 
   async function onWineChange(id: Wine["id"], patch: Partial<Wine>) {
+    const target = wines.find((w) => w.id === id);
+    if (!target) return;
+    
+    // Optimistic update
     setWines((ws) => ws.map((w) => (w.id === id ? { ...w, ...patch } : w)));
     try {
       await updateWine(id, patch);
     } catch (e) {
+      // Revert on failure
+      setWines((ws) => ws.map((w) => (w.id === id ? target : w)));
       setSaveState("error");
       toast.error("Could not save wine edit", errorMessage(e));
       setTimeout(() => setSaveState("idle"), 2400);
-      // Rethrow so the per-wine save indicator in WineEditor can show
-      // "Failed" inline, not just the global toast.
       throw e;
     }
   }
 
   async function onReorderWines(next: Wine[]) {
+    const previous = wines;
     const withOrder = next.map((w, i) => ({ ...w, order: i }));
     setWines(withOrder);
     try {
-      await Promise.all(
-        withOrder.map((w) => updateWine(w.id, { order: w.order }))
-      );
+      await reorderWines(withOrder.map(w => ({ id: Number(w.id), order: Number(w.order), parent_id: null })));
     } catch (e) {
+      // Revert on failure
+      setWines(previous);
       toast.error("Reorder did not persist", errorMessage(e));
     }
   }
 
   async function onDeleteWine(id: Wine["id"]) {
     const target = wines.find((w) => w.id === id);
+    const previous = wines;
     setWines((ws) => ws.filter((w) => w.id !== id));
     try {
       await deleteWine(id);
       if (target) toast.success("Wine removed", `${target.name} was deleted.`);
     } catch (e) {
+      // Revert on failure
+      setWines(previous);
       toast.error("Could not delete wine", errorMessage(e));
     }
   }
 
   const ctx: AdminContext = {
+    user,
     config,
     wines,
     loading,
@@ -245,6 +242,7 @@ function AdminShell() {
         <Route path="brand" element={<BrandPage ctx={ctx} />} />
         <Route path="hero" element={<HeroPage ctx={ctx} />} />
         <Route path="philosophy" element={<PhilosophyPage ctx={ctx} />} />
+        <Route path="ribbon" element={<RibbonPage ctx={ctx} />} />
         <Route path="collection" element={<CollectionPage ctx={ctx} />} />
         <Route path="featured" element={<FeaturedPage ctx={ctx} />} />
         <Route path="estate" element={<EstatePage ctx={ctx} />} />
@@ -254,6 +252,8 @@ function AdminShell() {
         <Route path="menu" element={<MenuPage />} />
         <Route path="templates" element={<TemplatesPage ctx={ctx} />} />
         <Route path="studio" element={<StudioPage ctx={ctx} />} />
+        <Route path="users" element={<UsersPage ctx={ctx} />} />
+        <Route path="audit" element={<AuditPage />} />
         <Route path="age-gate" element={<AgeGatePage ctx={ctx} />} />
         <Route path="settings" element={<SettingsPage ctx={ctx} />} />
         <Route path="preview" element={<PreviewPage ctx={ctx} />} />

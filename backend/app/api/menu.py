@@ -10,6 +10,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.utils import log_action
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.models import MenuItem, User
@@ -76,7 +77,7 @@ def read_menu_by_slug(slug: str, db: Session = Depends(get_db)):
 def create_menu_item(
     item: MenuItemCreate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     kind = _validate_kind(item.kind)
 
@@ -94,6 +95,9 @@ def create_menu_item(
 
     db_item = MenuItem(**payload)
     db.add(db_item)
+    
+    log_action(db, user.username, "CREATE", "menu", str(db_item.id), f"Created menu item: {db_item.label}")
+    
     db.commit()
     db.refresh(db_item)
     return db_item
@@ -104,7 +108,7 @@ def update_menu_item(
     item_id: int,
     patch: MenuItemUpdate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
     if not db_item:
@@ -119,6 +123,9 @@ def update_menu_item(
 
     for k, v in data.items():
         setattr(db_item, k, v)
+        
+    log_action(db, user.username, "UPDATE", "menu", str(item_id), f"Updated fields: {list(data.keys())}")
+    
     db.commit()
     db.refresh(db_item)
     return db_item
@@ -128,7 +135,7 @@ def update_menu_item(
 def reorder_menu(
     req: ReorderRequest,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Bulk reorder. Pass every affected item with its new (parent_id, order)."""
     ids = [e.id for e in req.items]
@@ -142,6 +149,9 @@ def reorder_menu(
             continue  # silently ignore self-parenting
         row.parent_id = entry.parent_id
         row.order = entry.order
+        
+    log_action(db, user.username, "UPDATE", "menu", "reorder", f"Bulk reordered {len(rows)} items.")
+    
     db.commit()
     return {"success": True, "count": len(rows)}
 
@@ -150,13 +160,18 @@ def reorder_menu(
 def delete_menu_item(
     item_id: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
     if not db_item:
         raise HTTPException(status_code=404, detail="Menu item not found")
+    
+    label = db_item.label
     # Cascade: drop children first so we don't leave orphans.
     db.query(MenuItem).filter(MenuItem.parent_id == item_id).delete()
     db.delete(db_item)
+    
+    log_action(db, user.username, "DELETE", "menu", str(item_id), f"Deleted menu item: {label}")
+    
     db.commit()
     return {"success": True}

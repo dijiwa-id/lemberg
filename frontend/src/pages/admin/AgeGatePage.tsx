@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Eye, ShieldCheck, ShieldOff } from "lucide-react";
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { ImageField, SelectField, TextField } from "../../components/admin/Field";
+import { ImageField, SelectField, TextField, RichTextField } from "../../components/admin/Field";
 import { ToggleField } from "../../components/admin/ToggleField";
 import { AgeGate } from "../../components/AgeGate";
 import { Monogram } from "../../components/Monogram";
@@ -101,10 +101,8 @@ export function AgeGatePage({ ctx }: { ctx: AdminContext }) {
                 hint="Rendered in italic pearl. Leave blank for a single-line heading."
               />
             </div>
-            <TextField
+            <RichTextField
               label="Body"
-              multiline
-              rows={3}
               value={config.ageGateBody || ""}
               onChange={(v) => update({ ageGateBody: v })}
               placeholder="The wines of Lemberg Estate are intended for visitors aged 18 and over…"
@@ -130,10 +128,8 @@ export function AgeGatePage({ ctx }: { ctx: AdminContext }) {
                 placeholder="I'm under age"
               />
             </div>
-            <TextField
+            <RichTextField
               label="Denial message"
-              multiline
-              rows={3}
               value={config.ageGateDenyMessage || ""}
               onChange={(v) => update({ ageGateDenyMessage: v })}
               placeholder="Thank you for your honesty. Please come back when you are old enough…"

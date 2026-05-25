@@ -26,7 +26,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useRef, useState } from "react";
-import { ImageField, NumberField, SelectField, TextField } from "./Field";
+import { NumberField, SelectField, TextField, RichTextField, ImageField } from "./Field";
+import { ToggleField } from "./ToggleField";
 import { Badge, statusToTone, statusLabel } from "./Badge";
 import { WineGallery } from "./WineGallery";
 import type { Wine } from "../../lib/types";
@@ -193,6 +194,18 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
             onChange={(v) => persist({region: v })}
           />
           <TextField
+            label="Alcohol %"
+            value={wine.alcoholPercentage || ""}
+            onChange={(v) => persist({alcoholPercentage: v })}
+            placeholder="14.5%"
+          />
+          <TextField
+            label="Bottle Count"
+            value={wine.bottleCount || ""}
+            onChange={(v) => persist({bottleCount: v })}
+            placeholder="1,200 bottles"
+          />
+          <TextField
             label="Category"
             value={wine.category || ""}
             onChange={(v) => persist({ category: v })}
@@ -205,6 +218,13 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
             onChange={(v) => persist({price: v })}
             step={10}
           />
+          <NumberField
+            label="Stock"
+            value={wine.stock}
+            onChange={(v) => persist({stock: v })}
+            step={1}
+            placeholder="0"
+          />
           <SelectField
             label="Status"
             value={wine.status || "available"}
@@ -216,22 +236,64 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
               { value: "sold-out", label: "Sold out" },
             ]}
           />
-          <div className="md:col-span-2">
-            <TextField
+
+          <div className="md:col-span-2 mt-4 pt-4 border-t border-[var(--color-ink-700)]">
+            <h4 className="label-eyebrow text-[var(--color-pearl-300)] mb-4">Cinematic Hero Settings</h4>
+            <div className="grid gap-5 md:grid-cols-2">
+              <ImageField
+                label="Cinematic Hero Image"
+                value={wine.heroImage || ""}
+                onChange={(v) => persist({ heroImage: v })}
+                aspect="aspect-[3/4]"
+                hint="Large oversized image used in the cinematic featured section."
+              />
+              <div className="space-y-5">
+                <SelectField
+                  label="Image Position"
+                  value={wine.heroImagePosition || "center"}
+                  onChange={(v) => persist({ heroImagePosition: v })}
+                  options={[
+                    { value: "center", label: "Center" },
+                    { value: "left", label: "Left" },
+                    { value: "right", label: "Right" },
+                  ]}
+                />
+                <NumberField
+                  label="Overlay Opacity"
+                  value={wine.overlayOpacity}
+                  onChange={(v) => persist({ overlayOpacity: v })}
+                  step={0.1}
+                  placeholder="0.0"
+                  hint="Subtle dark overlay over the hero image (0.0 to 1.0)."
+                />
+                <ToggleField
+                  label="Enable Reflection"
+                  value={!!wine.enableReflection}
+                  onChange={(v) => persist({ enableReflection: v })}
+                  description="Add a subtle glass reflection effect."
+                />
+                <ToggleField
+                  label="Enable Blur Effect"
+                  value={!!wine.enableBlurEffect}
+                  onChange={(v) => persist({ enableBlurEffect: v })}
+                  description="Add a cinematic background blur."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <RichTextField
               label="Description"
               value={wine.description || ""}
               onChange={(v) => persist({description: v })}
-              multiline
-              rows={2}
             />
           </div>
           <div className="md:col-span-2">
-            <TextField
+            <RichTextField
               label="Tasting notes"
               value={wine.tastingNotes || ""}
               onChange={(v) => persist({tastingNotes: v })}
-              multiline
-              rows={2}
             />
           </div>
           <div className="md:col-span-2">
@@ -253,7 +315,6 @@ function WineRow({ wine, onChange, onDelete }: WineRowProps) {
             <div className="mt-4">
               <WineGallery
                 images={wine.images || []}
-                legacyImage={wine.image}
                 onChange={(next) => persist({ images: next })}
               />
             </div>

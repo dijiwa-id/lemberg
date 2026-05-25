@@ -36,7 +36,6 @@ import {
   fetchMenu,
   fetchWines,
 } from "../services/api";
-import type { Wine } from "../lib/types";
 import { useDocumentMeta, useLandingTheme } from "../lib/useDocumentMeta";
 import { cacheBrand } from "../lib/brandCache";
 import {
@@ -76,7 +75,6 @@ export default function ReservationPage() {
   const [visitDate, setVisitDate] = useState(seedDate);
   const [visitTime, setVisitTime] = useState("11:00");
   const [message, setMessage] = useState("");
-  const [wineContext, setWineContext] = useState<Wine | null>(null);
 
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -115,7 +113,6 @@ export default function ReservationPage() {
         const found =
           all.find((w) => String(w.slug || w.id) === wineSlug) || null;
         if (!found) return;
-        setWineContext(found);
         setMessage((cur) =>
           cur
             ? cur
@@ -276,9 +273,10 @@ export default function ReservationPage() {
                     )}
                   </h1>
                   <Reveal y={14} delay={0.3} className="mt-8 max-w-md">
-                    <p className="body-editorial text-[var(--color-bone-300)]">
-                      {config.reservationBody}
-                    </p>
+                    <div
+                      className="body-editorial text-[var(--color-bone-300)]"
+                      dangerouslySetInnerHTML={{ __html: config.reservationBody || "" }}
+                    />
                   </Reveal>
                 </header>
 
@@ -521,13 +519,23 @@ export default function ReservationPage() {
                     <h3 className="mt-4 font-display text-2xl font-light italic text-[var(--color-pearl-300)]">
                       {config.experienceHeading || "Stay a while."}
                     </h3>
-                    <p className="mt-4 text-sm leading-relaxed text-[var(--color-bone-300)]">
-                      {config.experienceBody ||
-                        "Private tastings by appointment, Tuesday to Saturday."}
-                    </p>
+                    <div
+                      className="mt-4 text-sm leading-relaxed text-[var(--color-bone-300)]"
+                      dangerouslySetInnerHTML={{ __html: config.experienceBody || "Private tastings by appointment, Tuesday to Saturday." }}
+                    />
 
                     <dl className="mt-8 space-y-4 border-t border-[var(--border-subtle)] pt-6 text-sm">
-                      <FactRow label="Hours" value={config.experienceHours} />
+                      {(config.experienceHours || "")
+                        .split("\n")
+                        .map((l) => l.trim())
+                        .filter(Boolean)
+                        .map((line, i) => (
+                          <FactRow 
+                            key={i} 
+                            label={i === 0 ? "Hours" : ""} 
+                            value={line} 
+                          />
+                        ))}
                       <FactRow label="Tasting" value={config.experienceTasting} />
                       <FactRow label="Booking" value={config.experienceBooking} />
                       <FactRow

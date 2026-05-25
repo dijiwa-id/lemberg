@@ -9,6 +9,8 @@ import type {
   Subscriber,
   Template,
   TemplatePayload,
+  User,
+  AuditLog,
 } from "../lib/types";
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -155,6 +157,10 @@ export async function updateWine(
 
 export async function deleteWine(id: number | string): Promise<void> {
   await http.delete(`/wines/${id}`);
+}
+
+export async function reorderWines(items: ReorderEntry[]): Promise<void> {
+  await http.put("/wines/reorder", { items });
 }
 
 export async function uploadFile(file: File): Promise<{ url: string; bytes?: number }> {
@@ -339,12 +345,42 @@ export async function duplicateTemplate(id: number): Promise<Template> {
   return data;
 }
 
+/* ───── Users ───── */
+
+export async function fetchUsers(): Promise<User[]> {
+  const { data } = await http.get<User[]>("/auth/users");
+  return data;
+}
+
+export async function createUser(payload: any): Promise<User> {
+  const { data } = await http.post<User>("/auth/users", payload);
+  return data;
+}
+
+export async function updateUser(id: number, patch: any): Promise<User> {
+  const { data } = await http.put<User>(`/auth/users/${id}`, patch);
+  return data;
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  await http.delete(`/auth/users/${id}`);
+}
+
+/* ───── Audit ───── */
+
+export async function fetchAuditLogs(params?: {
+  action?: string;
+  target_type?: string;
+  username?: string;
+  limit?: number;
+}): Promise<AuditLog[]> {
+  const { data } = await http.get<AuditLog[]>("/audit", { params });
+  return data;
+}
+
 /* ───── Auth ───── */
 
-export interface AuthUser {
-  id: number;
-  username: string;
-}
+export type AuthUser = User;
 
 export interface SetupStatus {
   needed: boolean;

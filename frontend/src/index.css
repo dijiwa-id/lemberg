@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-quill/dist/quill.snow.css";
 
 @theme {
   /* Editorial typography — Cormorant for display, Inter Tight for UI, Inter for body. */
@@ -212,10 +213,9 @@
 
   .body-editorial {
     font-family: var(--font-body);
-    font-size: 14.5px;
-    line-height: 1.75;
+    font-size: 1.05rem;
+    line-height: 1.7;
     letter-spacing: 0.01em;
-    color: var(--color-bone-300);
   }
 
   /* Iridescent metallic gradient text — for the "L" mark and key italic phrases */
@@ -337,4 +337,65 @@
     background: var(--vignette-overlay);
     mix-blend-mode: multiply;
   }
+}
+
+/* React Quill Snow Theme overrides for the dark studio */
+.quill {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 0;
+  transition: border-color 0.2s;
+}
+
+.quill:focus-within {
+  border-color: var(--color-pearl-300);
+}
+
+.ql-toolbar.ql-snow {
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-default) !important;
+  background-color: rgba(10, 10, 11, 0.5);
+}
+
+.ql-container.ql-snow {
+  border: 0 !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+}
+
+.ql-editor {
+  min-height: 120px;
+  line-height: 1.6;
+  color: var(--color-bone-100) !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--color-bone-600) !important;
+  font-style: normal !important;
+}
+
+.ql-snow .ql-stroke {
+  stroke: var(--color-bone-400) !important;
+}
+
+.ql-snow .ql-fill {
+  fill: var(--color-bone-400) !important;
+}
+
+.ql-snow .ql-picker {
+  color: var(--color-bone-400) !important;
+}
+
+/* Ensure color picker dropdowns are visible and styled in the dark studio */
+.ql-snow .ql-picker-options {
+  background-color: var(--color-ink-800) !important;
+  border: 1px solid var(--border-default) !important;
+}
+
+.ql-snow .ql-color-picker .ql-picker-item {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ql-snow .ql-color-picker .ql-picker-item:hover {
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }

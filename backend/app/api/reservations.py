@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from app.api.utils import log_action
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.models import Reservation, User
@@ -83,7 +84,7 @@ def create_reservation(request: Request, payload: ReservationCreate, db: Session
 def list_reservations(
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     q = db.query(Reservation)
     if status:
@@ -96,7 +97,7 @@ def update_reservation(
     rid: int,
     patch: ReservationUpdate,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     row = db.query(Reservation).filter(Reservation.id == rid).first()
     if not row:
@@ -109,6 +110,9 @@ def update_reservation(
         )
     for k, v in data.items():
         setattr(row, k, v)
+
+    log_action(db, user.username, "UPDATE", "reservation", str(rid), f"Updated fields: {list(data.keys())}")
+
     db.commit()
     db.refresh(row)
     return row
@@ -118,11 +122,15 @@ def update_reservation(
 def delete_reservation(
     rid: int,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     row = db.query(Reservation).filter(Reservation.id == rid).first()
     if not row:
         raise HTTPException(status_code=404, detail="Reservation not found")
+
+    log_action(db, user.username, "DELETE", "reservation", str(rid))
+
     db.delete(row)
     db.commit()
     return {"success": True}
+

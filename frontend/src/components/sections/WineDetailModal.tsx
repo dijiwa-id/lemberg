@@ -185,7 +185,7 @@ export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps)
               {/* Meta row */}
               <dl className="mt-8 grid grid-cols-3 gap-6 border-y border-[var(--border-subtle)] py-5">
                 <Meta label="Region" value={wine.region} />
-                <Meta label="Category" value={wine.category || wine.alcohol} />
+                <Meta label="Category" value={wine.category} />
                 <Meta
                   label="Price"
                   value={
@@ -197,9 +197,10 @@ export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps)
               </dl>
 
               {wine.description && (
-                <p className="mt-7 body-editorial !text-[14.5px] text-[var(--color-bone-300)]">
-                  {wine.description}
-                </p>
+                <div
+                  className="mt-7 body-editorial !text-[14.5px] text-[var(--color-bone-300)]"
+                  dangerouslySetInnerHTML={{ __html: wine.description }}
+                />
               )}
 
               {wine.tastingNotes && (
@@ -207,9 +208,10 @@ export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps)
                   <span className="label-eyebrow text-[var(--color-bone-500)]">
                     Tasting notes
                   </span>
-                  <p className="mt-3 font-display italic text-xl leading-snug text-[var(--color-bone-100)]">
-                    “{wine.tastingNotes}”
-                  </p>
+                  <div
+                    className="mt-3 font-display italic text-xl leading-snug text-[var(--color-bone-100)]"
+                    dangerouslySetInnerHTML={{ __html: wine.tastingNotes }}
+                  />
                 </div>
               )}
 
