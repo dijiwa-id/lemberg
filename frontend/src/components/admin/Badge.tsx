@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 
-export type BadgeTone = "neutral" | "available" | "allocated" | "library" | "sold-out";
+export type BadgeTone = "neutral" | "available" | "allocated" | "library" | "sold-out" | "warning" | "info" | "success" | "critical" | "default";
 
 interface BadgeProps {
   tone?: BadgeTone;
@@ -15,6 +15,11 @@ const TONE_CLASS: Record<BadgeTone, string> = {
   allocated: "badge-allocated",
   library: "badge-library",
   "sold-out": "badge-sold-out",
+  warning: "badge-warning",
+  info: "badge-info",
+  success: "badge-success",
+  critical: "badge-critical",
+  default: "badge-neutral",
 };
 
 export function Badge({ tone = "neutral", children, className }: BadgeProps) {

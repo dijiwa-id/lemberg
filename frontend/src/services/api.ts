@@ -41,7 +41,7 @@ const TIMEOUT_MS = 20_000;
  * - One response interceptor: normalises errors and clears stale auth.
  * ──────────────────────────────────────────────────────────────────── */
 
-const http: AxiosInstance = axios.create({
+export const http: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: TIMEOUT_MS,
 });
@@ -265,6 +265,17 @@ export async function fetchSubscribers(): Promise<Subscriber[]> {
 
 export async function deleteSubscriber(id: number): Promise<void> {
   await http.delete(`/subscribers/${id}`);
+}
+
+/* ───── Wine Orders ───── */
+
+export async function createWineOrder(payload: any): Promise<any> {
+  const { data } = await http.post("/wine-orders", payload);
+  return data;
+}
+
+export async function notifyOrder(id: number): Promise<void> {
+  await http.post(`/admin/wine-orders/${id}/notify`);
 }
 
 /* ───── Theme templates ───── */

@@ -244,6 +244,24 @@ export interface SiteConfig {
   ageGateBackgroundImage?: string;
 }
 
+export interface CartItem {
+  wineId: number | string;
+  name: string;
+  vintage?: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+export interface CartOrder {
+  customer_name: string;
+  email: string;
+  phone_number: string;
+  address: string;
+  items: CartItem[];
+  notes?: string;
+}
+
 /* Helpers for boolean-as-string config values. The backend stores all
  * config rows as strings; helpers keep callers honest. */
 export function configFlag(v: string | undefined, fallback = true): boolean {

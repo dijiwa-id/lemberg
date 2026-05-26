@@ -21,6 +21,7 @@ import {
   UserCog,
   LogOut,
   X,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import type { LucideIcon } from "lucide-react";
@@ -46,6 +47,7 @@ const CONTENT_ITEMS: NavItemDef[] = [
   { to: "/admin/estate", icon: Mountain, label: "Estate" },
   { to: "/admin/experience", icon: CalendarDays, label: "Experience" },
   { to: "/admin/club", icon: Users, label: "Wine club" },
+  { to: "/admin/orders", icon: ShoppingBag, label: "Orders" },
   { to: "/admin/footer", icon: PanelBottom, label: "Footer" },
 ];
 
@@ -135,20 +137,22 @@ export function Sidebar({ open, onClose, studio }: SidebarProps) {
             ))}
           </NavGroup>
 
-          <NavGroup title="Tools">
-            {TOOL_ITEMS.map((item) => (
-              <NavItem key={item.to} item={item} />
-            ))}
-            <a
-              href="/"
-              target="_blank"
-              rel="noreferrer"
-              className="-ml-[2px] flex items-center gap-3 border-l-2 border-transparent pl-[10px] py-2 pr-3 text-sm text-[var(--color-bone-400)] transition-colors hover:bg-[var(--color-ink-700)] hover:text-[var(--color-bone-100)]"
-            >
-              <ExternalLink size={15} className="shrink-0" />
-              <span className="font-sans tracking-wide">View public site</span>
-            </a>
-          </NavGroup>
+          {auth.user?.role === "admin" && (
+            <NavGroup title="Tools">
+              {TOOL_ITEMS.map((item) => (
+                <NavItem key={item.to} item={item} />
+              ))}
+              <a
+                href="/"
+                target="_blank"
+                rel="noreferrer"
+                className="-ml-[2px] flex items-center gap-3 border-l-2 border-transparent pl-[10px] py-2 pr-3 text-sm text-[var(--color-bone-400)] transition-colors hover:bg-[var(--color-ink-700)] hover:text-[var(--color-bone-100)]"
+              >
+                <ExternalLink size={15} className="shrink-0" />
+                <span className="font-sans tracking-wide">View public site</span>
+              </a>
+            </NavGroup>
+          )}
 
           {auth.user?.role === "admin" && (
             <NavGroup title="System">

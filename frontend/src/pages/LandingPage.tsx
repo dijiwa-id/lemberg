@@ -12,6 +12,7 @@ import { Club } from "../components/sections/Club";
 import { Footer } from "../components/sections/Footer";
 import { VarietalRibbon } from "../components/sections/VarietalRibbon";
 import { WineDetailModal } from "../components/sections/WineDetailModal";
+import { OrderFormModal } from "../components/sections/OrderFormModal";
 import { Cursor } from "../components/Cursor";
 import { AgeGate } from "../components/AgeGate";
 import { MaintenancePage } from "../components/MaintenancePage";
@@ -43,6 +44,8 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   const [menu, setMenu] = useState(remoteMenu);
   
   const [activeWine, setActiveWine] = useState<Wine | null>(null);
+  const [orderWine, setOrderWine] = useState<Wine | null>(null);
+  const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const location = useLocation();
 
   // Sync with remote data when it updates (non-preview mode)
@@ -82,6 +85,11 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   useDocumentMeta(isPreview ? FALLBACK_CONFIG : config);
 
   const theme = useLandingTheme(config.landingTheme);
+
+  const openOrderForm = (wine: Wine | null = null) => {
+    setOrderWine(wine);
+    setIsOrderFormOpen(true);
+  };
 
   // Brand accent overrides the iridescent pearl across the entire landing.
   const accentStyle: CSSProperties = config.brandAccent
@@ -151,6 +159,14 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
         wine={activeWine}
         config={config}
         onClose={() => setActiveWine(null)}
+      />
+
+      <OrderFormModal
+        wine={orderWine}
+        wines={wines}
+        config={config}
+        isOpen={isOrderFormOpen}
+        onClose={() => setIsOrderFormOpen(false)}
       />
     </div>
   );

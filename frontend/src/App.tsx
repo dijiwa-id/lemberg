@@ -4,11 +4,13 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SplashScreen } from "./components/SplashScreen";
 import { AuthProvider, RequireAuth } from "./lib/auth";
+import { CartProvider } from "./lib/useCart";
 
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Admin = lazy(() => import("./pages/Admin"));
 const DynamicPage = lazy(() => import("./pages/DynamicPage"));
 const ReservationPage = lazy(() => import("./pages/ReservationPage"));
+const CartPage = lazy(() => import("./pages/CartPage"));
 const LoginPage = lazy(() => import("./pages/admin/LoginPage"));
 
 function NotFound() {
@@ -39,26 +41,29 @@ export default function App() {
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
-          <Suspense fallback={<SplashScreen />}>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/page/:slug" element={<DynamicPage />} />
-              <Route path="/reservation" element={<ReservationPage />} />
-              {/* Login route MUST come before /admin/* so the more-specific
-                  path wins. React Router v6 sorts by specificity, but listing
-                  it first makes intent obvious to a future reader. */}
-              <Route path="/admin/login" element={<LoginPage />} />
-              <Route
-                path="/admin/*"
-                element={
-                  <RequireAuth>
-                    <Admin />
-                  </RequireAuth>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <CartProvider>
+            <Suspense fallback={<SplashScreen />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/page/:slug" element={<DynamicPage />} />
+                <Route path="/reservation" element={<ReservationPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                {/* Login route MUST come before /admin/* so the more-specific
+                    path wins. React Router v6 sorts by specificity, but listing
+                    it first makes intent obvious to a future reader. */}
+                <Route path="/admin/login" element={<LoginPage />} />
+                <Route
+                  path="/admin/*"
+                  element={
+                    <RequireAuth>
+                      <Admin />
+                    </RequireAuth>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

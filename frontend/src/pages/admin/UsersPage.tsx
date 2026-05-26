@@ -69,6 +69,20 @@ export function UsersPage({ ctx }: { ctx: AdminContext }) {
     }
   }
 
+  async function toggleRole(u: User) {
+    if (u.id === currentUser?.id) return;
+    setBusy(true);
+    const newRole = u.role === "admin" ? "editor" : "admin";
+    try {
+      await updateUser(u.id, { role: newRole });
+      load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleDelete(u: User) {
     if (u.id === currentUser?.id) return;
     if (!window.confirm(`Delete user "${u.username}"? This cannot be undone.`)) return;
@@ -161,6 +175,14 @@ export function UsersPage({ ctx }: { ctx: AdminContext }) {
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             {u.id !== currentUser?.id && (
                               <>
+                                <button
+                                  onClick={() => toggleRole(u)}
+                                  disabled={busy}
+                                  title={u.role === 'admin' ? "Downgrade to Editor" : "Upgrade to Admin"}
+                                  className="p-2 text-[var(--color-bone-500)] hover:text-[var(--color-pearl-300)] transition-colors"
+                                >
+                                  <Shield size={16} />
+                                </button>
                                 <button
                                   onClick={() => toggleStatus(u)}
                                   disabled={busy}

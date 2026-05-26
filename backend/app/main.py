@@ -10,7 +10,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.api import auth, cms, menu, reservations, subscribers, templates, audit
+from app.api import auth, cms, menu, reservations, subscribers, templates, audit, wine_orders
 from app.api.cms import UPLOAD_DIR
 from app.database import Base, SessionLocal, engine
 from app.migrate import add_missing_columns
@@ -141,6 +141,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(cms.router, prefix="/api", tags=["cms"])
 app.include_router(menu.router, prefix="/api", tags=["menu"])
 app.include_router(reservations.router, prefix="/api", tags=["reservations"])
+app.include_router(wine_orders.router, prefix="/api", tags=["wine_orders"])
 app.include_router(subscribers.router, prefix="/api", tags=["subscribers"])
 app.include_router(templates.router, prefix="/api", tags=["templates"])
 app.include_router(audit.router, prefix="/api", tags=["audit"])

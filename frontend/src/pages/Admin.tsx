@@ -30,6 +30,7 @@ import { EstatePage } from "./admin/EstatePage";
 import { ExperiencePage } from "./admin/ExperiencePage";
 import { ClubPage } from "./admin/ClubPage";
 import { FooterPage } from "./admin/FooterPage";
+import { OrdersPage } from "./admin/OrdersPage";
 import { PreviewPage } from "./admin/PreviewPage";
 import { SettingsPage } from "./admin/SettingsPage";
 import { MenuPage } from "./admin/MenuPage";
@@ -248,6 +249,7 @@ function AdminShell() {
         <Route path="estate" element={<EstatePage ctx={ctx} />} />
         <Route path="experience" element={<ExperiencePage ctx={ctx} />} />
         <Route path="club" element={<ClubPage ctx={ctx} />} />
+        <Route path="orders" element={<OrdersPage ctx={ctx} />} />
         <Route path="footer" element={<FooterPage ctx={ctx} />} />
         <Route path="menu" element={<MenuPage />} />
         <Route path="templates" element={<TemplatesPage ctx={ctx} />} />

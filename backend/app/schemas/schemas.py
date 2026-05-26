@@ -242,3 +242,51 @@ class ReservationResponse(BaseModel):
     status: str
     createdAt: str
     model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Wine Orders ----------
+
+class CartItem(BaseModel):
+    wine_id: int
+    name: str
+    vintage: Optional[str] = None
+    price: float
+    quantity: int
+
+class WineOrderCreate(BaseModel):
+    customer_name: str
+    email: str
+    phone_number: str
+    address: str
+    wine_product_id: Optional[int] = None
+    quantity: Optional[int] = 1
+    items: Optional[List[CartItem]] = None
+    notes: Optional[str] = None
+    source_page: Optional[str] = None
+
+
+class WineOrderUpdate(BaseModel):
+    status: Optional[str] = None
+    customer_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    quantity: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class WineOrderResponse(BaseModel):
+    id: int
+    customer_name: str
+    email: str
+    phone_number: str
+    address: Optional[str] = None
+    wine_product_id: Optional[int] = None
+    quantity: Optional[int] = None
+    items: Optional[List[CartItem]] = None
+    notes: Optional[str] = None
+    status: str
+    source_page: Optional[str] = None
+    createdAt: str
+    updatedAt: str
+    model_config = ConfigDict(from_attributes=True)

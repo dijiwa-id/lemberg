@@ -40,6 +40,11 @@ USER_COLUMNS = {
     "isActive": "BOOLEAN DEFAULT 1",
 }
 
+WINE_ORDER_COLUMNS = {
+    "address": "TEXT",
+    "items":   "JSON",
+}
+
 
 def _ensure_columns(engine: Engine, table: str, cols: dict[str, str]) -> None:
     try:
@@ -66,4 +71,5 @@ def add_missing_columns(engine: Engine) -> None:
     _ensure_columns(engine, "wines", WINE_COLUMNS)
     _ensure_columns(engine, "reservations", RESERVATION_COLUMNS)
     _ensure_columns(engine, "users", USER_COLUMNS)
+    _ensure_columns(engine, "wine_orders", WINE_ORDER_COLUMNS)
     logger.info("Database column check complete.")

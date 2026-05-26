@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { X, ImageOff } from "lucide-react";
+import { X, ImageOff, ShoppingCart, Check } from "lucide-react";
 import type { SiteConfig, Wine } from "../../lib/types";
 import { currencySymbol, wineGallery } from "../../lib/types";
 import { resolveAsset } from "../../services/api";
 import { statusLabel, statusToTone } from "../admin/Badge";
 import { cn } from "../../lib/utils";
+import { useCart } from "../../lib/useCart";
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -24,10 +25,13 @@ interface WineDetailModalProps {
 export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps) {
   const gallery = wineGallery(wine);
   const [activeIdx, setActiveIdx] = useState(0);
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
 
   // Whenever a new wine is opened, snap back to the first image.
   useEffect(() => {
     setActiveIdx(0);
+    setAdded(false);
   }, [wine?.id]);
 
   // Body-scroll lock + Escape-to-close, scoped to whenever the modal is open.
@@ -234,27 +238,40 @@ export function WineDetailModal({ wine, config, onClose }: WineDetailModalProps)
                     secure the next release.
                   </div>
                 ) : (
-                  <Link
-                    to={`/reservation?wine=${encodeURIComponent(
-                      wine.slug || String(wine.id)
-                    )}`}
-                    onClick={onClose}
-                    className="group inline-flex w-full items-center justify-center gap-4 bg-[var(--color-bone-50)] px-7 py-3.5 text-[var(--color-ink-900)] transition-colors hover:bg-[var(--color-bone-100)] sm:w-auto"
-                  >
-                    <span className="label-meta">
-                      {wine.status === "allocated"
-                        ? "Request allocation"
-                        : "Reserve a tasting"}
-                    </span>
-                    <svg width="20" height="8" viewBox="0 0 20 8" fill="none" aria-hidden>
-                      <path
-                        d="M1 4h17m0 0L15 1m3 3l-3 3"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        className="transition-transform duration-500 group-hover:translate-x-1"
-                      />
-                    </svg>
-                  </Link>
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    <Link
+                      to={`/reservation?wine=${encodeURIComponent(
+                        wine.slug || String(wine.id)
+                      )}`}
+                      onClick={onClose}
+                      className="group inline-flex flex-1 items-center justify-center gap-4 border border-[var(--color-bone-300)]/40 px-7 py-3.5 text-[var(--color-bone-100)] transition-colors hover:bg-[var(--color-bone-50)] hover:text-[var(--color-ink-900)]"
+                    >
+                      <span className="label-meta">
+                        {wine.status === "allocated"
+                          ? "Request allocation"
+                          : "Reserve a tasting"}
+                      </span>
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        addToCart(wine);
+                        setAdded(true);
+                        setTimeout(() => setAdded(false), 2000);
+                      }}
+                      className={cn(
+                        "group inline-flex flex-1 items-center justify-center gap-4 px-7 py-3.5 transition-all duration-300",
+                        added
+                          ? "bg-green-600/20 text-green-400 border border-green-500/30"
+                          : "bg-[var(--color-bone-50)] text-[var(--color-ink-900)] hover:bg-[var(--color-bone-100)]"
+                      )}
+                    >
+                      <span className="label-meta">
+                        {added ? "Added to cart" : "Add to cart"}
+                      </span>
+                      {added ? <Check size={18} /> : <ShoppingCart size={18} />}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

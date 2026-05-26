@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { cn } from "../lib/utils";
 import type { MenuItem, MenuItemNode, SiteConfig } from "../lib/types";
 import { resolveAsset } from "../services/api";
+import { useCart } from "../lib/useCart";
 
 interface NavProps {
   config: SiteConfig;
@@ -23,6 +25,7 @@ export function Nav({
   const [expandedMobile, setExpandedMobile] = useState<Record<number, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
+  const { totalItems } = useCart();
 
   const hasAnnouncement =
     showAnnouncementBar && Boolean(config.navAnnouncement);
@@ -285,6 +288,18 @@ export function Nav({
           </nav>
 
           <div className="hidden shrink-0 items-center gap-5 md:flex">
+            <Link
+              to="/cart"
+              className="relative flex h-10 w-10 items-center justify-center text-[var(--color-bone-200)]/70 transition-colors hover:text-[var(--color-bone-100)]"
+              aria-label={`Cart with ${totalItems} items`}
+            >
+              <ShoppingCart size={20} strokeWidth={1.5} />
+              {totalItems > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center bg-[var(--color-pearl-300)] font-mono text-[9px] font-bold text-[var(--color-ink-900)]">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
             <a
               href="/#club"
               onClick={(e) =>
@@ -327,28 +342,43 @@ export function Nav({
             </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center text-[var(--color-bone-100)] md:hidden"
-            aria-label="Menu"
-            aria-expanded={open}
-          >
-            <span className="relative block h-3 w-6">
-              <span
-                className={cn(
-                  "absolute left-0 top-0 h-px w-6 bg-current transition-transform duration-300",
-                  open && "translate-y-1.5 rotate-45"
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute left-0 bottom-0 h-px w-6 bg-current transition-transform duration-300",
-                  open && "-translate-y-1.5 -rotate-45"
-                )}
-              />
-            </span>
-          </button>
+          <div className="flex items-center gap-4 md:hidden">
+            <Link
+              to="/cart"
+              className="relative flex h-9 w-9 items-center justify-center text-[var(--color-bone-100)]"
+              aria-label={`Cart with ${totalItems} items`}
+              onClick={() => setOpen(false)}
+            >
+              <ShoppingCart size={20} strokeWidth={1.5} />
+              {totalItems > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center bg-[var(--color-pearl-300)] font-mono text-[8px] font-bold text-[var(--color-ink-900)]">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="flex h-9 w-9 items-center justify-center text-[var(--color-bone-100)]"
+              aria-label="Menu"
+              aria-expanded={open}
+            >
+              <span className="relative block h-3 w-6">
+                <span
+                  className={cn(
+                    "absolute left-0 top-0 h-px w-6 bg-current transition-transform duration-300",
+                    open && "translate-y-1.5 rotate-45"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 bottom-0 h-px w-6 bg-current transition-transform duration-300",
+                    open && "-translate-y-1.5 -rotate-45"
+                  )}
+                />
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 

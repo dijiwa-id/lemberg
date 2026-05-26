@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.auth import get_current_user
+from app.api.auth import check_admin
 from app.database import get_db
 from app.models.models import AuditLog, User
 from app.schemas.schemas import AuditLogResponse
@@ -22,10 +22,9 @@ def list_audit_logs(
     username: Optional[str] = Query(None),
     limit: int = Query(100, le=500),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    admin: User = Depends(check_admin),
 ):
-    """View the audit trail. Open to all authenticated admins/editors as per
-    user request ("Audit visibility for all admins")."""
+    """View the audit trail. Strictly reserved for 'admin' role."""
     q = db.query(AuditLog)
     if action:
         q = q.filter(AuditLog.action == action)

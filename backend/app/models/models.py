@@ -155,3 +155,24 @@ class Reservation(Base):
     message = Column(Text, nullable=True)
     status = Column(String, default="new", index=True)       # new | confirmed | cancelled
     createdAt = Column(String, nullable=False)               # ISO 8601 UTC
+
+
+class WineOrder(Base):
+    """A wine collection order request submitted via the public order form.
+    Admin can monitor and update status in the CMS."""
+
+    __tablename__ = "wine_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_name = Column(String, nullable=False)
+    email = Column(String, nullable=False, index=True)
+    phone_number = Column(String, nullable=False)
+    wine_product_id = Column(Integer, ForeignKey("wines.id"), nullable=True)
+    quantity = Column(Integer, default=1)
+    notes = Column(Text, nullable=True)
+    address = Column(Text, nullable=True)
+    items = Column(JSON, nullable=True) # List of cart items
+    status = Column(String, default="new", index=True) # new | processing | contacted | completed | cancelled
+    source_page = Column(String, nullable=True)
+    createdAt = Column(String, nullable=False)         # ISO 8601 UTC
+    updatedAt = Column(String, nullable=False)         # ISO 8601 UTC
