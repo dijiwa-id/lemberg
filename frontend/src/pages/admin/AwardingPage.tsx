@@ -2,7 +2,7 @@ import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
 import { TextField } from "../../components/admin/Field";
 import { ToggleField } from "../../components/admin/ToggleField";
-import { WineGallery } from "../../components/admin/WineGallery";
+import { AwardGallery } from "../../components/admin/AwardGallery";
 import type { AdminContext } from "../Admin";
 import { parseAwardingImages, serializeAwardingImages, flagValue } from "../../lib/types";
 
@@ -59,7 +59,7 @@ export function AwardingPage({ ctx }: { ctx: AdminContext }) {
             </div>
 
             <p className="label-eyebrow mb-4 text-[var(--color-bone-300)]">Medals & Logos</p>
-            <WineGallery 
+            <AwardGallery 
               images={awardingImages} 
               onChange={(next) => update({ awardingImages: serializeAwardingImages(next) })} 
             />

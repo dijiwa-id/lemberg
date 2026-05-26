@@ -970,19 +970,33 @@ export function serializeRibbonImages(images: string[]): string {
   return JSON.stringify(images.filter((s) => typeof s === "string"));
 }
 
-export function parseAwardingImages(raw: string | undefined | null): string[] {
+export interface AwardItem {
+  image: string;
+  text?: string;
+}
+
+export function parseAwardingImages(raw: string | undefined | null): AwardItem[] {
   if (!raw || !raw.trim()) return [];
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((s) => typeof s === "string");
+    return parsed.map((item) => {
+      if (typeof item === "string") return { image: item };
+      if (item && typeof item === "object") {
+        return {
+          image: typeof item.image === "string" ? item.image : "",
+          text: typeof item.text === "string" ? item.text : "",
+        };
+      }
+      return { image: "" };
+    }).filter(item => item.image);
   } catch {
     return [];
   }
 }
 
-export function serializeAwardingImages(images: string[]): string {
-  return JSON.stringify(images.filter((s) => typeof s === "string"));
+export function serializeAwardingImages(images: AwardItem[]): string {
+  return JSON.stringify(images.filter((item) => item && typeof item.image === "string" && item.image.length > 0));
 }
 
 /** Symmetric serializer — preserves draft slides (those without an image)
