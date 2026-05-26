@@ -1,6 +1,7 @@
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
-import { TextField, ToggleField } from "../../components/admin/Field";
+import { TextField } from "../../components/admin/Field";
+import { ToggleField } from "../../components/admin/ToggleField";
 import { WineGallery } from "../../components/admin/WineGallery";
 import type { AdminContext } from "../Admin";
 import { parseAwardingImages, serializeAwardingImages, flagValue } from "../../lib/types";
