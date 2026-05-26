@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import uuid
+import aiofiles
 from typing import Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile

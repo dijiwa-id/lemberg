@@ -170,7 +170,6 @@ export async function uploadFile(file: File): Promise<{ url: string; bytes?: num
     "/upload",
     form,
     {
-      headers: { "Content-Type": "multipart/form-data" },
       // Uploads can be slow on weak connections — give them longer.
       timeout: 60_000,
     }
