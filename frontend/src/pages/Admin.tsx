@@ -30,6 +30,7 @@ const HeroPage = lazy(() => import("./admin/HeroPage").then(m => ({ default: m.H
 const PhilosophyPage = lazy(() => import("./admin/PhilosophyPage").then(m => ({ default: m.PhilosophyPage })));
 const RibbonPage = lazy(() => import("./admin/RibbonPage").then(m => ({ default: m.RibbonPage })));
 const AwardingPage = lazy(() => import("./admin/AwardingPage").then(m => ({ default: m.AwardingPage })));
+const TestimonialsPage = lazy(() => import("./admin/TestimonialsPage").then(m => ({ default: m.TestimonialsPage })));
 const CollectionPage = lazy(() => import("./admin/CollectionPage").then(m => ({ default: m.CollectionPage })));
 const FeaturedPage = lazy(() => import("./admin/FeaturedPage").then(m => ({ default: m.FeaturedPage })));
 const EstatePage = lazy(() => import("./admin/EstatePage").then(m => ({ default: m.EstatePage })));
@@ -250,6 +251,7 @@ function AdminShell() {
           <Route path="philosophy" element={<PhilosophyPage ctx={ctx} />} />
           <Route path="ribbon" element={<RibbonPage ctx={ctx} />} />
           <Route path="awarding" element={<AwardingPage ctx={ctx} />} />
+          <Route path="testimonials" element={<TestimonialsPage ctx={ctx} />} />
           <Route path="collection" element={<CollectionPage ctx={ctx} />} />
           <Route path="featured" element={<FeaturedPage ctx={ctx} />} />
           <Route path="estate" element={<EstatePage ctx={ctx} />} />

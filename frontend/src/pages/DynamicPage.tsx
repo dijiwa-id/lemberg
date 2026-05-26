@@ -7,11 +7,13 @@ import { AgeGate } from "../components/AgeGate";
 import { Footer } from "../components/sections/Footer";
 import { Reveal, RevealLines } from "../components/motion/Reveal";
 import { ImageReveal } from "../components/motion/ImageReveal";
+import { TestimonialSection } from "../components/sections/TestimonialSection";
 import {
   FALLBACK_CONFIG,
   FALLBACK_MENU,
   configFlag,
   mergeRemoteConfig,
+  parseTestimonials,
   type MenuItem,
   type MenuItemNode,
   type SiteConfig,
@@ -216,6 +218,10 @@ export default function DynamicPage() {
                   dangerouslySetInnerHTML={{ __html: page.pageBody }}
                 />
               </Reveal>
+            )}
+
+            {page.target === "our-story" && config.testimonials && (
+              <TestimonialSection testimonials={parseTestimonials(config.testimonials)} />
             )}
 
             {/* Sibling pages — surface other pages under the same parent */}

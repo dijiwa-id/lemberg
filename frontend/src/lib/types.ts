@@ -995,8 +995,29 @@ export function parseAwardingImages(raw: string | undefined | null): AwardItem[]
   }
 }
 
-export function serializeAwardingImages(images: AwardItem[]): string {
-  return JSON.stringify(images.filter((item) => item && typeof item.image === "string" && item.image.length > 0));
+export interface Testimonial {
+  image: string;
+  name: string;
+  quote: string;
+}
+
+export function parseTestimonials(raw: string | undefined | null): Testimonial[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => ({
+      image: typeof item.image === "string" ? item.image : "",
+      name: typeof item.name === "string" ? item.name : "",
+      quote: typeof item.quote === "string" ? item.quote : "",
+    })).filter(t => t.name || t.quote);
+  } catch {
+    return [];
+  }
+}
+
+export function serializeTestimonials(testimonials: Testimonial[]): string {
+  return JSON.stringify(testimonials.filter((t) => t.name || t.quote || t.image));
 }
 
 /** Symmetric serializer — preserves draft slides (those without an image)

@@ -46,6 +46,7 @@ const CONTENT_ITEMS: NavItemDef[] = [
   { to: "/admin/collection", icon: WineIcon, label: "Wine collection" },
   { to: "/admin/featured", icon: Star, label: "Featured wine" },
   { to: "/admin/awarding", icon: Award, label: "Awarding section" },
+  { to: "/admin/testimonials", icon: Users, label: "Testimonials" },
   { to: "/admin/estate", icon: Mountain, label: "Estate" },
   { to: "/admin/experience", icon: CalendarDays, label: "Experience" },
   { to: "/admin/club", icon: Users, label: "Wine club" },
