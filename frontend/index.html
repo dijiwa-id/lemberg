@@ -9,6 +9,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter+Tight:wght@200;300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        try {
+          const cache = JSON.parse(localStorage.getItem('lemberg_brand_cache'));
+          if (cache && cache.brandAccent) {
+            document.documentElement.style.setProperty('--color-pearl-300', cache.brandAccent);
+          }
+          const config = JSON.parse(localStorage.getItem('lemberg_cached_config'));
+          if (config && config.landingTheme) {
+            document.documentElement.setAttribute('data-theme', config.landingTheme);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

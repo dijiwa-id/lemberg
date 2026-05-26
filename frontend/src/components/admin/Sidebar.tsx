@@ -71,9 +71,10 @@ interface SidebarProps {
   open: boolean;
   onClose: () => void;
   studio?: StudioIdentity;
+  dirty?: boolean;
 }
 
-export function Sidebar({ open, onClose, studio }: SidebarProps) {
+export function Sidebar({ open, onClose, studio, dirty }: SidebarProps) {
   const auth = useAuth();
   const navigate = useNavigate();
   const id = studio || DEFAULT_STUDIO_IDENTITY;
@@ -130,7 +131,10 @@ export function Sidebar({ open, onClose, studio }: SidebarProps) {
 
         <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-5">
           <NavGroup title="Overview">
-            <NavItem item={{ to: "/admin", end: true, icon: LayoutDashboard, label: "Dashboard" }} />
+            <NavItem 
+              item={{ to: "/admin", end: true, icon: LayoutDashboard, label: "Dashboard" }} 
+              indicator={dirty ? "dirty" : undefined}
+            />
           </NavGroup>
 
           <NavGroup title="Content sections">
@@ -193,7 +197,7 @@ function NavGroup({ title, children }: { title: string; children: React.ReactNod
   );
 }
 
-function NavItem({ item }: { item: NavItemDef }) {
+function NavItem({ item, indicator }: { item: NavItemDef; indicator?: "dirty" }) {
   const Icon = item.icon;
   return (
     <NavLink
@@ -201,7 +205,7 @@ function NavItem({ item }: { item: NavItemDef }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          "-ml-[2px] flex items-center gap-3 border-l-2 py-2 pl-[10px] pr-3 text-sm transition-colors",
+          "-ml-[2px] flex items-center gap-3 border-l-2 py-2 pl-[10px] pr-3 text-sm transition-colors relative",
           isActive
             ? "border-[var(--color-pearl-300)] bg-[var(--color-ink-700)] text-[var(--color-bone-100)]"
             : "border-transparent text-[var(--color-bone-400)] hover:bg-[var(--color-ink-700)] hover:text-[var(--color-bone-100)]"
@@ -210,6 +214,9 @@ function NavItem({ item }: { item: NavItemDef }) {
     >
       <Icon size={15} className="shrink-0" />
       <span className="font-sans tracking-wide">{item.label}</span>
+      {indicator === "dirty" && (
+        <span className="absolute right-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[var(--color-wine-500)] shadow-[0_0_8px_rgba(185,72,60,0.5)]" />
+      )}
     </NavLink>
   );
 }

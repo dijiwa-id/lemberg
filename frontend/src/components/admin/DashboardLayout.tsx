@@ -50,6 +50,7 @@ export function DashboardLayout({
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         studio={studio}
+        dirty={dirty}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

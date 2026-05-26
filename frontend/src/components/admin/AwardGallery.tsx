@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { Star, X, Plus, ImageOff } from "lucide-react";
+import { X, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import { resolveAsset, uploadFile, errorMessage } from "../../services/api";
-import { cn } from "../../lib/utils";
 import { useToast } from "../../lib/toast";
 import type { AwardItem } from "../../lib/types";
 
@@ -86,16 +85,18 @@ export function AwardGallery({ images, onChange }: AwardGalleryProps) {
                   type="button"
                   onClick={() => move(idx, -1)}
                   disabled={idx === 0}
-                  className="rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-tighter text-[var(--color-bone-500)] hover:bg-[var(--color-ink-800)] disabled:opacity-30"
+                  className="flex items-center gap-1 rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-tighter text-[var(--color-bone-500)] hover:bg-[var(--color-ink-800)] disabled:opacity-30"
                 >
+                  <ChevronUp size={10} />
                   Move Up
                 </button>
                 <button
                   type="button"
                   onClick={() => move(idx, 1)}
                   disabled={idx === images.length - 1}
-                  className="rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-tighter text-[var(--color-bone-500)] hover:bg-[var(--color-ink-800)] disabled:opacity-30"
+                  className="flex items-center gap-1 rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-tighter text-[var(--color-bone-500)] hover:bg-[var(--color-ink-800)] disabled:opacity-30"
                 >
+                  <ChevronDown size={10} />
                   Move Down
                 </button>
               </div>

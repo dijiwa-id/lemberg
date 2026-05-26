@@ -26,6 +26,7 @@ import {
 } from "../lib/types";
 import { useDocumentMeta, useLandingTheme } from "../lib/useDocumentMeta";
 import { useSiteData } from "../lib/useSiteData";
+import { getCachedBrand } from "../lib/brandCache";
 
 interface LandingPageProps {
   previewConfig?: SiteConfig;
@@ -93,9 +94,12 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   };
 
   // Brand accent overrides the iridescent pearl across the entire landing.
-  const accentStyle: CSSProperties = config.brandAccent
-    ? ({ "--color-pearl-300": config.brandAccent } as CSSProperties)
-    : {};
+  // We check the runtime config first, then fall back to the pre-React cache
+  // to ensure a flicker-free transition during hydration.
+  const accentStyle: CSSProperties = useMemo(() => {
+    const accent = config.brandAccent || getCachedBrand().brandAccent;
+    return accent ? ({ "--color-pearl-300": accent } as CSSProperties) : {};
+  }, [config.brandAccent]);
 
   // Maintenance mode short-circuits the entire site (preview still renders the
   // full landing so editors can keep editing while the public site is paused).

@@ -28,6 +28,17 @@ engine = create_engine(
     connect_args=connect_args,
     pool_pre_ping=True,  # auto-recycle stale connections (matters for Postgres)
 )
+
+# Enable WAL mode for SQLite at the engine level
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

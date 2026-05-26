@@ -17,6 +17,7 @@ export interface CachedBrand {
   logoText: string;
   logoImage: string;
   logoFont: string;
+  brandAccent: string;
   /** A short subtitle below the wordmark — pulled from heroEyebrow. */
   tagline: string;
   v?: number; // Version field
@@ -26,6 +27,7 @@ const DEFAULT_BRAND: CachedBrand = {
   logoText: "Lemberg",
   logoImage: "",
   logoFont: "Cormorant Garamond",
+  brandAccent: "",
   tagline: "Tulbagh Valley · South Africa",
   v: CACHE_VERSION,
 };
@@ -58,6 +60,7 @@ export function cacheBrand(config: Partial<SiteConfig> | null | undefined): void
     logoText: (config.logoText || "").trim() || DEFAULT_BRAND.logoText,
     logoImage: (config.logoImage || "").trim(),
     logoFont: (config.logoFont || "").trim() || DEFAULT_BRAND.logoFont,
+    brandAccent: (config.brandAccent || "").trim(),
     tagline: (config.heroEyebrow || "").trim() || DEFAULT_BRAND.tagline,
     v: CACHE_VERSION,
   };
