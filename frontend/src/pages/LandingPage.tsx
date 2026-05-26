@@ -6,6 +6,7 @@ import { Hero } from "../components/sections/Hero";
 import { Philosophy } from "../components/sections/Philosophy";
 import { Collection } from "../components/sections/Collection";
 import { FeaturedWine } from "../components/sections/FeaturedWine";
+import { AwardingRibbon } from "../components/sections/AwardingRibbon";
 import { EstateBand } from "../components/sections/EstateBand";
 import { Experience } from "../components/sections/Experience";
 import { Club } from "../components/sections/Club";
@@ -113,6 +114,7 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
   const showEstateBand = configFlag(config.showEstateBand, true);
   const showExperience = configFlag(config.showExperience, true);
   const showClub = configFlag(config.showClub, true);
+  const showAwarding = configFlag(config.showAwarding, true);
 
   return (
     <div
@@ -149,6 +151,7 @@ export default function LandingPage({ previewConfig, previewWines }: LandingPage
             onOpenWine={setActiveWine}
           />
         )}
+        {showAwarding && <AwardingRibbon config={config} />}
         {showEstateBand && <EstateBand config={config} />}
         {showExperience && <Experience config={config} />}
         {showClub && <Club config={config} />}

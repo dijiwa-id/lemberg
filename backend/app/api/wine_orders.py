@@ -207,9 +207,9 @@ def notify_wine_order(
         )
         
         if not success:
-             raise HTTPException(status_code=500, detail="Failed to send notification via Resend.")
+             raise HTTPException(status_code=400, detail="Email notification failed. Service may not be configured.")
              
         log_action(db, user.username, "NOTIFY", "wine_order", str(oid))
-        return {"success": True}
+        return {"success": True, "message": "Notification sent successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -153,6 +153,9 @@ DEFAULT_CONFIG = {
     "showEstateBand": "true",
     "showExperience": "true",
     "showClub": "true",
+    "showAwarding": "true",
+    "awardingHeading": "Awarding",
+    "awardingImages": "[]",
     "maintenanceMode": "false",
     "maintenanceMessage": (
         "The cellar is closed for a moment. Please check back shortly — "
@@ -448,6 +451,7 @@ def _seed_default_template(db: Session) -> None:
         "showAnnouncementBar", "showPhilosophy", "showVarietalRibbon",
         "ribbonFormat", "ribbonText", "ribbonImages",
         "showFeaturedWine", "showEstateBand", "showExperience", "showClub",
+        "showAwarding", "awardingHeading", "awardingImages",
     )
     rows = db.query(Config).filter(Config.key.in_(fields)).all()
     payload = {r.key: (r.value or "") for r in rows}

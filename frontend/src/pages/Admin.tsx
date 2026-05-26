@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import {
   errorMessage,
@@ -19,28 +19,32 @@ import { ToastProvider, useToast } from "../lib/toast";
 import { cacheBrand } from "../lib/brandCache";
 import { cacheStudio, pickStudioIdentity } from "../lib/studioIdentity";
 import { DashboardLayout } from "../components/admin/DashboardLayout";
-import { Dashboard } from "./admin/Dashboard";
-import { BrandPage } from "./admin/BrandPage";
-import { HeroPage } from "./admin/HeroPage";
-import { PhilosophyPage } from "./admin/PhilosophyPage";
-import { RibbonPage } from "./admin/RibbonPage";
-import { CollectionPage } from "./admin/CollectionPage";
-import { FeaturedPage } from "./admin/FeaturedPage";
-import { EstatePage } from "./admin/EstatePage";
-import { ExperiencePage } from "./admin/ExperiencePage";
-import { ClubPage } from "./admin/ClubPage";
-import { FooterPage } from "./admin/FooterPage";
-import { OrdersPage } from "./admin/OrdersPage";
-import { PreviewPage } from "./admin/PreviewPage";
-import { SettingsPage } from "./admin/SettingsPage";
-import { MenuPage } from "./admin/MenuPage";
-import { TemplatesPage } from "./admin/TemplatesPage";
-import { StudioPage } from "./admin/StudioPage";
-import { AgeGatePage } from "./admin/AgeGatePage";
-import { UsersPage } from "./admin/UsersPage";
-import { AuditPage } from "./admin/AuditPage";
+import { SplashScreen } from "../components/SplashScreen";
 import { useAuth } from "../lib/auth";
 import { useSiteData } from "../lib/useSiteData";
+
+// Lazy-load sub-pages to keep the admin bundle lean
+const Dashboard = lazy(() => import("./admin/Dashboard").then(m => ({ default: m.Dashboard })));
+const BrandPage = lazy(() => import("./admin/BrandPage").then(m => ({ default: m.BrandPage })));
+const HeroPage = lazy(() => import("./admin/HeroPage").then(m => ({ default: m.HeroPage })));
+const PhilosophyPage = lazy(() => import("./admin/PhilosophyPage").then(m => ({ default: m.PhilosophyPage })));
+const RibbonPage = lazy(() => import("./admin/RibbonPage").then(m => ({ default: m.RibbonPage })));
+const AwardingPage = lazy(() => import("./admin/AwardingPage").then(m => ({ default: m.AwardingPage })));
+const CollectionPage = lazy(() => import("./admin/CollectionPage").then(m => ({ default: m.CollectionPage })));
+const FeaturedPage = lazy(() => import("./admin/FeaturedPage").then(m => ({ default: m.FeaturedPage })));
+const EstatePage = lazy(() => import("./admin/EstatePage").then(m => ({ default: m.EstatePage })));
+const ExperiencePage = lazy(() => import("./admin/ExperiencePage").then(m => ({ default: m.ExperiencePage })));
+const ClubPage = lazy(() => import("./admin/ClubPage").then(m => ({ default: m.ClubPage })));
+const FooterPage = lazy(() => import("./admin/FooterPage").then(m => ({ default: m.FooterPage })));
+const OrdersPage = lazy(() => import("./admin/OrdersPage").then(m => ({ default: m.OrdersPage })));
+const PreviewPage = lazy(() => import("./admin/PreviewPage").then(m => ({ default: m.PreviewPage })));
+const SettingsPage = lazy(() => import("./admin/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const MenuPage = lazy(() => import("./admin/MenuPage").then(m => ({ default: m.MenuPage })));
+const TemplatesPage = lazy(() => import("./admin/TemplatesPage").then(m => ({ default: m.TemplatesPage })));
+const StudioPage = lazy(() => import("./admin/StudioPage").then(m => ({ default: m.StudioPage })));
+const AgeGatePage = lazy(() => import("./admin/AgeGatePage").then(m => ({ default: m.AgeGatePage })));
+const UsersPage = lazy(() => import("./admin/UsersPage").then(m => ({ default: m.UsersPage })));
+const AuditPage = lazy(() => import("./admin/AuditPage").then(m => ({ default: m.AuditPage })));
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -238,29 +242,32 @@ function AdminShell() {
       lastSaved={lastSaved}
       onSave={persistConfig}
     >
-      <Routes>
-        <Route index element={<Dashboard ctx={ctx} />} />
-        <Route path="brand" element={<BrandPage ctx={ctx} />} />
-        <Route path="hero" element={<HeroPage ctx={ctx} />} />
-        <Route path="philosophy" element={<PhilosophyPage ctx={ctx} />} />
-        <Route path="ribbon" element={<RibbonPage ctx={ctx} />} />
-        <Route path="collection" element={<CollectionPage ctx={ctx} />} />
-        <Route path="featured" element={<FeaturedPage ctx={ctx} />} />
-        <Route path="estate" element={<EstatePage ctx={ctx} />} />
-        <Route path="experience" element={<ExperiencePage ctx={ctx} />} />
-        <Route path="club" element={<ClubPage ctx={ctx} />} />
-        <Route path="orders" element={<OrdersPage ctx={ctx} />} />
-        <Route path="footer" element={<FooterPage ctx={ctx} />} />
-        <Route path="menu" element={<MenuPage />} />
-        <Route path="templates" element={<TemplatesPage ctx={ctx} />} />
-        <Route path="studio" element={<StudioPage ctx={ctx} />} />
-        <Route path="users" element={<UsersPage ctx={ctx} />} />
-        <Route path="audit" element={<AuditPage />} />
-        <Route path="age-gate" element={<AgeGatePage ctx={ctx} />} />
-        <Route path="settings" element={<SettingsPage ctx={ctx} />} />
-        <Route path="preview" element={<PreviewPage ctx={ctx} />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
+      <Suspense fallback={<SplashScreen />}>
+        <Routes>
+          <Route index element={<Dashboard ctx={ctx} />} />
+          <Route path="brand" element={<BrandPage ctx={ctx} />} />
+          <Route path="hero" element={<HeroPage ctx={ctx} />} />
+          <Route path="philosophy" element={<PhilosophyPage ctx={ctx} />} />
+          <Route path="ribbon" element={<RibbonPage ctx={ctx} />} />
+          <Route path="awarding" element={<AwardingPage ctx={ctx} />} />
+          <Route path="collection" element={<CollectionPage ctx={ctx} />} />
+          <Route path="featured" element={<FeaturedPage ctx={ctx} />} />
+          <Route path="estate" element={<EstatePage ctx={ctx} />} />
+          <Route path="experience" element={<ExperiencePage ctx={ctx} />} />
+          <Route path="club" element={<ClubPage ctx={ctx} />} />
+          <Route path="orders" element={<OrdersPage ctx={ctx} />} />
+          <Route path="footer" element={<FooterPage ctx={ctx} />} />
+          <Route path="menu" element={<MenuPage />} />
+          <Route path="templates" element={<TemplatesPage ctx={ctx} />} />
+          <Route path="studio" element={<StudioPage ctx={ctx} />} />
+          <Route path="users" element={<UsersPage ctx={ctx} />} />
+          <Route path="audit" element={<AuditPage />} />
+          <Route path="age-gate" element={<AgeGatePage ctx={ctx} />} />
+          <Route path="settings" element={<SettingsPage ctx={ctx} />} />
+          <Route path="preview" element={<PreviewPage ctx={ctx} />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </Suspense>
     </DashboardLayout>
   );
 }

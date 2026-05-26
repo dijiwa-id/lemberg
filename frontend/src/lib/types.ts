@@ -179,6 +179,9 @@ export interface SiteConfig {
   showEstateBand?: string;
   showExperience?: string;
   showClub?: string;
+  showAwarding?: string;
+  awardingHeading?: string;
+  awardingImages?: string; // JSON array of string URLs
 
   // Maintenance
   maintenanceMode?: string;        // "true" / "false"
@@ -295,6 +298,7 @@ const TOGGLE_KEYS: ReadonlySet<keyof SiteConfig> = new Set([
   "showEstateBand",
   "showExperience",
   "showClub",
+  "showAwarding",
   "maintenanceMode",
   "featuredEnableReflection",
   "featuredEnableBlurEffect",
@@ -419,6 +423,7 @@ export const TEMPLATE_FIELDS = [
   "showEstateBand",
   "showExperience",
   "showClub",
+  "showAwarding",
 ] as const;
 
 export type TemplateField = (typeof TEMPLATE_FIELDS)[number];
@@ -734,6 +739,9 @@ export const FALLBACK_CONFIG: SiteConfig = {
   showEstateBand: "true",
   showExperience: "true",
   showClub: "true",
+  showAwarding: "true",
+  awardingHeading: "Awarding",
+  awardingImages: "[]",
   maintenanceMode: "false",
   maintenanceMessage:
     "The cellar is closed for a moment. Please check back shortly — or write to us at info@lemberg.co.za.",
@@ -959,6 +967,21 @@ export function parseRibbonImages(raw: string | undefined | null): string[] {
 }
 
 export function serializeRibbonImages(images: string[]): string {
+  return JSON.stringify(images.filter((s) => typeof s === "string"));
+}
+
+export function parseAwardingImages(raw: string | undefined | null): string[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => typeof s === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function serializeAwardingImages(images: string[]): string {
   return JSON.stringify(images.filter((s) => typeof s === "string"));
 }
 

@@ -18,8 +18,6 @@ import {
   Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import type { AdminContext } from "../Admin";
 import { PageHeader } from "../../components/admin/PageHeader";
 import { Card } from "../../components/admin/Card";
@@ -133,27 +131,63 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
     />;
   }
 
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.items ? o.items.reduce((s, i) => s + (i.price * i.quantity), 0) : 0), 0);
+  const newOrdersCount = orders.filter(o => o.status === 'new').length;
+  const processingCount = orders.filter(o => o.status === 'processing').length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-10">
       <PageHeader 
         title="Wine Orders" 
         description="Manage collection orders and customer requests from the cart."
       />
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-bone-500)]" size={16} />
-          <input 
-            type="text"
-            placeholder="Search by name, email or ID..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[var(--color-ink-850)] border border-[var(--border-subtle)] pl-10 pr-4 py-2.5 text-sm text-[var(--color-bone-100)] focus:outline-none focus:border-[var(--color-pearl-300)] transition-colors"
-          />
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[var(--border-subtle)] border-y border-[var(--border-subtle)] bg-[var(--color-ink-950)]/30 backdrop-blur-sm">
+        <div className="p-6 md:p-8 flex flex-col justify-between group">
+          <div className="flex items-center gap-3 text-[var(--color-bone-500)] mb-4">
+            <ShoppingBag size={14} className="group-hover:text-[var(--color-pearl-300)] transition-colors" />
+            <span className="label-eyebrow tracking-widest text-[10px]">Total Orders</span>
+          </div>
+          <p className="font-display text-4xl md:text-5xl font-light text-[var(--color-bone-50)]">{orders.length}</p>
+        </div>
+        
+        <div className="p-6 md:p-8 flex flex-col justify-between group">
+          <div className="flex items-center gap-3 text-[var(--color-bone-500)] mb-4">
+            <CreditCard size={14} className="group-hover:text-[var(--color-pearl-300)] transition-colors" />
+            <span className="label-eyebrow tracking-widest text-[10px]">Total Revenue</span>
+          </div>
+          <p className="font-display text-4xl md:text-5xl font-light text-[var(--color-pearl-300)]">{symbol}{totalRevenue.toLocaleString()}</p>
+        </div>
+
+        <div className="p-6 md:p-8 flex flex-col justify-between group">
+          <div className="flex items-center gap-3 text-[var(--color-bone-500)] mb-4">
+            <Clock size={14} className="group-hover:text-[var(--color-pearl-300)] transition-colors" />
+            <span className="label-eyebrow tracking-widest text-[10px]">New Requests</span>
+          </div>
+          <p className="font-display text-4xl md:text-5xl font-light text-[var(--color-bone-50)]">{newOrdersCount}</p>
+        </div>
+
+        <div className="p-6 md:p-8 flex flex-col justify-between group">
+          <div className="flex items-center gap-3 text-[var(--color-bone-500)] mb-4">
+            <Package size={14} className="group-hover:text-[var(--color-pearl-300)] transition-colors" />
+            <span className="label-eyebrow tracking-widest text-[10px]">Processing</span>
+          </div>
+          <p className="font-display text-4xl md:text-5xl font-light text-[var(--color-bone-50)]">{processingCount}</p>
         </div>
       </div>
 
-      <Card className="overflow-hidden border-[var(--border-subtle)] bg-[var(--color-ink-900)]/20 backdrop-blur-sm">
+      <div className="relative group max-w-2xl">
+        <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-[var(--color-bone-600)] group-focus-within:text-[var(--color-pearl-300)] transition-colors" size={18} />
+        <input 
+          type="text"
+          placeholder="Search by customer name, email or ID..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full bg-transparent border-b border-[var(--border-subtle)] pl-8 pr-4 py-4 text-base text-[var(--color-bone-100)] focus:outline-none focus:border-[var(--color-pearl-300)] transition-colors rounded-none placeholder:text-[var(--color-bone-600)] placeholder:font-light"
+        />
+      </div>
+
+      <div className="overflow-hidden -mx-4 sm:mx-0">
         {loading ? (
           <div className="py-32 flex flex-col items-center justify-center gap-4 text-[var(--color-bone-500)]">
             <div className="h-10 w-10 border-2 border-[var(--color-pearl-300)] border-t-transparent animate-spin rounded-full" />
@@ -161,26 +195,26 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center gap-6 text-[var(--color-bone-500)]">
-            <div className="h-20 w-20 flex items-center justify-center rounded-full bg-[var(--color-ink-800)]/50 border border-[var(--border-subtle)]">
-              <ShoppingBag size={32} strokeWidth={1} className="opacity-40" />
+            <div className="h-20 w-20 flex items-center justify-center rounded-full bg-[var(--color-ink-800)]/50">
+              <ShoppingBag size={32} strokeWidth={1} className="opacity-40 text-[var(--color-pearl-300)]" />
             </div>
             <div className="text-center space-y-1">
-              <p className="label-eyebrow text-[var(--color-bone-200)]">No orders found</p>
-              <p className="text-xs opacity-50">Try adjusting your search or filters.</p>
+              <p className="label-eyebrow text-[var(--color-bone-200)] tracking-widest">No orders found</p>
+              <p className="text-xs opacity-50 font-light">Try adjusting your search or filters.</p>
             </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[var(--border-subtle)] bg-[var(--color-ink-950)]/50">
-                  <th className="pl-8 pr-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Ref.</th>
-                  <th className="px-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Customer</th>
-                  <th className="px-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Date</th>
-                  <th className="px-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em] text-center">Items</th>
-                  <th className="px-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Total</th>
-                  <th className="px-6 py-5 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Status</th>
-                  <th className="px-6 py-5"></th>
+                <tr className="border-b border-[var(--border-subtle)] bg-transparent">
+                  <th className="pl-4 sm:pl-8 pr-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Ref.</th>
+                  <th className="px-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Customer</th>
+                  <th className="px-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Date</th>
+                  <th className="px-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em] text-center">Items</th>
+                  <th className="px-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Total</th>
+                  <th className="px-6 py-6 label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-[0.2em]">Status</th>
+                  <th className="px-4 sm:px-8 py-6"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -195,10 +229,10 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
                   return (
                     <tr 
                       key={order.id} 
-                      className="group hover:bg-[var(--color-pearl-300)]/[0.03] transition-colors cursor-pointer"
+                      className="group hover:bg-[var(--color-pearl-300)]/[0.02] transition-colors cursor-pointer"
                       onClick={() => setSelectedOrder(order)}
                     >
-                      <td className="pl-8 pr-6 py-5">
+                      <td className="pl-4 sm:pl-8 pr-6 py-5">
                         <span className="font-mono text-sm text-[var(--color-bone-400)] group-hover:text-[var(--color-pearl-300)] transition-colors">#{order.id}</span>
                       </td>
                       <td className="px-6 py-5">
@@ -212,13 +246,13 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
                           <span className="text-sm text-[var(--color-bone-300)]">
                             {formatDate(order.createdAt)}
                           </span>
-                          <span className="text-[10px] text-[var(--color-bone-600)] uppercase tracking-tighter">
+                          <span className="text-[10px] text-[var(--color-bone-600)] uppercase tracking-tighter mt-0.5">
                             {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[10px] font-mono text-[var(--color-bone-400)]">
+                        <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-[var(--color-ink-950)]/50 border border-[var(--border-subtle)] text-[10px] font-mono text-[var(--color-bone-400)]">
                           {itemCount}
                         </span>
                       </td>
@@ -230,9 +264,9 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
                       <td className="px-6 py-5">
                         <StatusBadge status={order.status} />
                       </td>
-                      <td className="px-8 py-5 text-right">
-                        <div className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-transparent group-hover:border-[var(--border-subtle)] group-hover:bg-[var(--color-ink-800)] transition-all">
-                          <ChevronRight size={14} className="text-[var(--color-bone-600)] group-hover:text-[var(--color-bone-100)] transition-transform group-hover:translate-x-0.5" />
+                      <td className="px-4 sm:px-8 py-5 text-right">
+                        <div className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-transparent group-hover:border-[var(--border-subtle)] group-hover:bg-[var(--color-ink-900)] transition-all">
+                          <ChevronRight size={14} className="text-[var(--color-bone-600)] group-hover:text-[var(--color-pearl-300)] transition-transform group-hover:translate-x-0.5" />
                         </div>
                       </td>
                     </tr>
@@ -242,7 +276,7 @@ export function OrdersPage({ ctx }: { ctx: AdminContext }) {
             </table>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
@@ -405,38 +439,38 @@ function OrderDetails({ order, onBack, onUpdateStatus, symbol, formatDateTime, c
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="flex items-start gap-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-[var(--border-subtle)] pb-8">
+        <div className="flex items-start gap-6">
           <button 
             onClick={onBack}
-            className="mt-1 h-12 w-12 flex items-center justify-center rounded-full border border-[var(--border-subtle)] text-[var(--color-bone-400)] hover:text-[var(--color-bone-100)] hover:border-[var(--color-bone-100)] hover:bg-[var(--color-ink-800)] transition-all group"
+            className="mt-2 text-[var(--color-bone-500)] hover:text-[var(--color-pearl-300)] transition-colors group"
           >
-            <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
           </button>
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <span className="label-eyebrow text-[var(--color-bone-500)] tracking-[0.2em]">Order Details</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <span className="label-eyebrow text-[var(--color-bone-500)] tracking-[0.3em] uppercase">Order Details</span>
               <StatusBadge status={order.status} />
             </div>
-            <h1 className="font-display text-4xl font-light text-[var(--color-bone-50)]">
-              #{order.id} — <span className="opacity-60">{order.customer_name}</span>
+            <h1 className="font-display text-5xl font-light text-[var(--color-bone-50)] tracking-tight">
+              #{order.id} <span className="text-[var(--color-bone-500)] mx-2">/</span> <span className="opacity-80">{order.customer_name}</span>
             </h1>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
           <button
             onClick={handleExportPDF}
-            className="inline-flex items-center gap-2 bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[var(--color-bone-100)] px-5 py-3 text-[10px] label-eyebrow transition-all hover:bg-[var(--color-ink-700)] hover:border-[var(--color-bone-400)] active:scale-[0.98]"
+            className="inline-flex items-center gap-2 bg-transparent border-b border-transparent text-[var(--color-pearl-300)] px-2 py-2 text-[11px] label-eyebrow font-bold uppercase tracking-widest transition-all hover:border-[var(--color-pearl-300)]"
           >
-            <Download size={14} className="opacity-60" />
-            Export PDF
+            <Download size={14} />
+            PDF Invoice
           </button>
 
           <button
             onClick={handleNotify}
             disabled={isNotifying}
-            className="inline-flex items-center gap-2 bg-[var(--color-pearl-300)] text-[var(--color-ink-950)] px-5 py-3 text-[10px] label-eyebrow transition-all hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+            className="inline-flex items-center gap-2 bg-[var(--color-pearl-300)] text-[var(--color-ink-950)] px-8 py-4 text-[11px] label-eyebrow font-bold uppercase tracking-widest transition-all hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-[0_0_15px_rgba(200,160,120,0.2)]"
           >
             <Send size={14} />
             {isNotifying ? "Sending..." : "Notify Seller"}
@@ -444,33 +478,30 @@ function OrderDetails({ order, onBack, onUpdateStatus, symbol, formatDateTime, c
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
+        <div className="lg:col-span-2 space-y-12">
           {/* Order Items */}
-          <Card className="p-0 overflow-hidden border-[var(--border-subtle)] bg-[var(--color-ink-900)]/40">
-            <div className="px-8 py-5 border-b border-[var(--border-subtle)] bg-[var(--color-ink-950)]/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Package size={18} className="text-[var(--color-pearl-300)]" />
-                <h3 className="label-eyebrow text-[var(--color-bone-100)] tracking-widest text-[11px]">Items Summary</h3>
-              </div>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)]">
+              <h3 className="label-eyebrow text-[var(--color-bone-100)] tracking-widest text-[11px]">Items Summary</h3>
               <span className="text-[10px] font-mono text-[var(--color-bone-500)] uppercase">
                 {order.items?.length || 0} unique lines
               </span>
             </div>
-            <div className="p-0 overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-[var(--border-subtle)]/50">
-                    <th className="pl-8 pr-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)]">Product</th>
+                    <th className="pl-0 pr-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)]">Product</th>
                     <th className="px-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)] text-center">Qty</th>
                     <th className="px-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)] text-right">Price</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)] text-right">Subtotal</th>
+                    <th className="pr-0 pl-6 py-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bone-500)] text-right">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]/30">
                   {order.items?.map((item, idx) => (
                     <tr key={idx} className="group hover:bg-[var(--color-bone-100)]/[0.02] transition-colors">
-                      <td className="pl-8 pr-6 py-5">
+                      <td className="pl-0 pr-6 py-5">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-[var(--color-bone-100)] group-hover:text-white transition-colors">{item.name}</span>
                           {item.vintage && <span className="text-[10px] text-[var(--color-pearl-300)] italic tracking-wider mt-0.5">{item.vintage}</span>}
@@ -482,42 +513,43 @@ function OrderDetails({ order, onBack, onUpdateStatus, symbol, formatDateTime, c
                       <td className="px-6 py-5 text-right">
                         <span className="text-sm font-mono text-[var(--color-bone-400)]">{symbol}{item.price.toLocaleString()}</span>
                       </td>
-                      <td className="px-6 py-5 text-right">
+                      <td className="pr-0 pl-6 py-5 text-right">
                         <span className="text-sm font-mono font-medium text-[var(--color-bone-100)]">{symbol}{(item.price * item.quantity).toLocaleString()}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-[var(--color-ink-950)]/50">
-                    <td colSpan={3} className="pl-8 pr-6 py-8 text-right font-medium text-[var(--color-bone-400)] label-eyebrow tracking-widest text-[11px]">Total Order Value</td>
-                    <td className="px-6 py-8 text-right font-display text-3xl text-[var(--color-pearl-300)] font-light">{symbol}{total.toLocaleString()}</td>
+                  <tr>
+                    <td colSpan={3} className="pl-0 pr-6 py-8 text-right font-medium text-[var(--color-bone-400)] label-eyebrow tracking-widest text-[11px] uppercase">Total Order Value</td>
+                    <td className="pr-0 pl-6 py-8 text-right font-display text-4xl text-[var(--color-pearl-300)] font-light">{symbol}{total.toLocaleString()}</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
-          </Card>
+          </div>
 
           {/* Notes */}
           {order.notes && (
-            <Card className="p-8 space-y-4 border-l-4 border-l-[var(--color-pearl-300)] bg-[var(--color-ink-900)]/40">
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Clock size={14} className="text-[var(--color-bone-500)]" />
                 <h3 className="label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-widest">Customer Request</h3>
               </div>
-              <p className="body-editorial text-[var(--color-bone-200)] italic whitespace-pre-wrap leading-relaxed text-lg">
-                "{order.notes}"
-              </p>
-            </Card>
+              <div className="pl-6 border-l border-[var(--color-pearl-300)]/30">
+                <p className="body-editorial text-[var(--color-bone-200)] italic whitespace-pre-wrap leading-relaxed text-lg">
+                  "{order.notes}"
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-12">
           {/* Status Actions */}
-          <Card className="p-8 space-y-6 border-[var(--border-subtle)] bg-[var(--color-ink-900)]/40">
-            <div className="flex items-center justify-between">
-              <h3 className="label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-widest">Status Lifecycle</h3>
-              <Clock size={14} className="text-[var(--color-bone-600)]" />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+              <h3 className="label-eyebrow text-[var(--color-bone-100)] text-[11px] tracking-widest">Status Lifecycle</h3>
             </div>
             <div className="flex flex-col gap-2">
               <StatusButton active={order.status === "new"} status="new" onClick={() => onUpdateStatus(order.id, "new")} />
@@ -526,59 +558,61 @@ function OrderDetails({ order, onBack, onUpdateStatus, symbol, formatDateTime, c
               <StatusButton active={order.status === "completed"} status="completed" onClick={() => onUpdateStatus(order.id, "completed")} />
               <StatusButton active={order.status === "cancelled"} status="cancelled" onClick={() => onUpdateStatus(order.id, "cancelled")} />
             </div>
-          </Card>
+          </div>
 
           {/* Customer Info */}
-          <Card className="p-0 overflow-hidden border-[var(--border-subtle)] bg-[var(--color-ink-900)]/40">
-            <div className="px-8 py-5 border-b border-[var(--border-subtle)] bg-[var(--color-ink-950)]/50">
-              <h3 className="label-eyebrow text-[var(--color-bone-100)] text-[10px] tracking-widest">Customer Record</h3>
+          <div className="space-y-6">
+            <div className="border-b border-[var(--border-subtle)] pb-4">
+              <h3 className="label-eyebrow text-[var(--color-bone-100)] text-[11px] tracking-widest">Customer Record</h3>
             </div>
-            <div className="p-8 space-y-6">
-              <div className="flex gap-5">
-                <div className="h-12 w-12 shrink-0 flex items-center justify-center bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[var(--color-bone-400)] rounded-xl">
-                  <User size={20} />
+            <div className="space-y-6">
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 text-[var(--color-bone-500)]">
+                  <User size={16} />
                 </div>
                 <div className="min-w-0">
-                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase">Full Name</p>
+                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase mb-1">Full Name</p>
                   <p className="text-base font-medium text-[var(--color-bone-100)] truncate">{order.customer_name}</p>
                 </div>
               </div>
 
-              <div className="flex gap-5">
-                <div className="h-12 w-12 shrink-0 flex items-center justify-center bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[var(--color-bone-400)] rounded-xl">
-                  <Mail size={20} />
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 text-[var(--color-bone-500)]">
+                  <Mail size={16} />
                 </div>
                 <div className="min-w-0">
-                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase">Email Address</p>
+                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase mb-1">Email Address</p>
                   <p className="text-sm font-mono text-[var(--color-bone-300)] truncate select-all">{order.email}</p>
                 </div>
               </div>
 
-              <div className="flex gap-5">
-                <div className="h-12 w-12 shrink-0 flex items-center justify-center bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[var(--color-bone-400)] rounded-xl">
-                  <Phone size={20} />
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 text-[var(--color-bone-500)]">
+                  <Phone size={16} />
                 </div>
                 <div>
-                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase">Phone Number</p>
+                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase mb-1">Phone Number</p>
                   <p className="text-base font-medium text-[var(--color-bone-100)]">{order.phone_number}</p>
                 </div>
               </div>
 
-              <div className="flex gap-5">
-                <div className="h-12 w-12 shrink-0 flex items-center justify-center bg-[var(--color-ink-800)] border border-[var(--border-subtle)] text-[var(--color-bone-400)] rounded-xl">
-                  <MapPin size={20} />
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 text-[var(--color-bone-500)]">
+                  <MapPin size={16} />
                 </div>
                 <div>
-                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase">Delivery Address</p>
+                  <p className="label-eyebrow text-[9px] text-[var(--color-bone-500)] tracking-widest uppercase mb-1">Delivery Address</p>
                   <p className="text-sm text-[var(--color-bone-300)] leading-relaxed">{order.address}</p>
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Timeline Info */}
-          <Card className="p-8 space-y-6 border-[var(--border-subtle)] bg-[var(--color-ink-900)]/40">
-            <h3 className="label-eyebrow text-[var(--color-bone-500)] text-[10px] tracking-widest">Metadata</h3>
+          <div className="space-y-6">
+            <div className="border-b border-[var(--border-subtle)] pb-4">
+              <h3 className="label-eyebrow text-[var(--color-bone-100)] text-[11px] tracking-widest">Metadata</h3>
+            </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-[var(--color-bone-500)] uppercase tracking-wider">Placed</span>
@@ -586,14 +620,14 @@ function OrderDetails({ order, onBack, onUpdateStatus, symbol, formatDateTime, c
               </div>
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-[var(--color-bone-500)] uppercase tracking-wider">Source</span>
-                <span className="text-[var(--color-pearl-300)] px-2 py-0.5 bg-[var(--color-pearl-300)]/10 rounded font-mono lowercase">{order.source_page || "cart"}</span>
+                <span className="text-[var(--color-pearl-300)] font-mono lowercase">{order.source_page || "cart"}</span>
               </div>
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-[var(--color-bone-500)] uppercase tracking-wider">Modified</span>
                 <span className="text-[var(--color-bone-400)] font-mono">{formatDateTime(order.updatedAt)}</span>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

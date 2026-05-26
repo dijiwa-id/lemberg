@@ -7,6 +7,18 @@ import { resolveAsset } from "../../services/api";
 import { Reveal, RevealLines } from "../motion/Reveal";
 import { cn } from "../../lib/utils";
 
+/**
+ * Strips HTML tags from a string. Used for short card descriptions where
+ * rich text (from the Quill editor) would break the layout or leak tags.
+ */
+function stripHTML(html: string | undefined | null): string {
+  if (!html) return "";
+  // 1. Remove common empty tag artifacts from editors
+  const clean = html.replace(/<p><br><\/p>|<p><\/p>/gi, "");
+  // 2. Strip all remaining tags
+  return clean.replace(/<[^>]*>?/gm, "").trim();
+}
+
 /* ─────────────────────────────────────────────────────────────────────
  * Wine collection section
  *
@@ -1027,9 +1039,9 @@ const WineCard = memo(function WineCard({ wine, symbol, hovered, onHover, onOpen
         {!compact && wine.description && (
           <p
             className="mt-4 max-w-xs body-editorial !text-[13.5px] text-[var(--color-bone-400)] line-clamp-2"
-            title={wine.description}
+            title={stripHTML(wine.description)}
           >
-            {wine.description}
+            {stripHTML(wine.description)}
           </p>
         )}
 

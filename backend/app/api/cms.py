@@ -44,7 +44,8 @@ def update_config(
     if not isinstance(config_data, dict):
         raise HTTPException(status_code=400, detail="Body must be a JSON object.")
 
-    keys_changed = []
+    # Validation and coercion
+    to_update = {}
     for key, value in config_data.items():
         if not isinstance(key, str) or len(key) > CONFIG_KEY_MAX:
             raise HTTPException(
@@ -57,17 +58,29 @@ def update_config(
                 status_code=400,
                 detail=f"Config value for '{key}' exceeds {CONFIG_VALUE_MAX} chars.",
             )
+        to_update[key] = coerced
 
-        db_config = db.query(Config).filter(Config.key == key).first()
-        if db_config:
-            db_config.value = coerced
+    if not to_update:
+        return {}
+
+    # Batch fetch existing configs to avoid N+1
+    existing_configs = db.query(Config).filter(Config.key.in_(to_update.keys())).all()
+    existing_map = {c.key: c for c in existing_configs}
+
+    keys_changed = []
+    for key, value in to_update.items():
+        if key in existing_map:
+            if existing_map[key].value != value:
+                existing_map[key].value = value
+                keys_changed.append(key)
         else:
-            db.add(Config(key=key, value=coerced))
-        keys_changed.append(key)
+            db.add(Config(key=key, value=value))
+            keys_changed.append(key)
     
-    log_action(db, user.username, "UPDATE", "config", None, f"Updated keys: {', '.join(keys_changed[:10])}{'...' if len(keys_changed) > 10 else ''}")
+    if keys_changed:
+        log_action(db, user.username, "UPDATE", "config", None, f"Updated keys: {', '.join(keys_changed[:10])}{'...' if len(keys_changed) > 10 else ''}")
+        db.commit()
     
-    db.commit()
     return config_data
 
 
@@ -203,7 +216,7 @@ def _sanitize_filename(raw: str | None) -> str:
 
 
 @router.post("/upload")
-def upload_file(
+async def upload_file(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -239,11 +252,11 @@ def upload_file(
 
     written = 0
     try:
-        with open(filepath, "wb") as buffer:
-            while chunk := file.file.read(1024 * 1024):  # 1 MB chunks — bounded memory
+        async with aiofiles.open(filepath, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):  # 1 MB chunks — bounded memory
                 written += len(chunk)
                 if written > UPLOAD_MAX_BYTES:
-                    buffer.close()
+                    await buffer.close()
                     os.remove(filepath)
                     raise HTTPException(
                         status_code=413,
@@ -252,19 +265,20 @@ def upload_file(
                             f"{UPLOAD_MAX_BYTES // (1024 * 1024)} MB."
                         ),
                     )
-                buffer.write(chunk)
+                await buffer.write(chunk)
     except HTTPException:
         raise
-    except OSError as e:
+    except Exception as e:
         logger.exception("Failed to write upload %s: %s", filename, e)
         # Best-effort cleanup if a partial file was written.
         try:
-            os.remove(filepath)
+            if os.path.exists(filepath):
+                os.remove(filepath)
         except OSError:
             pass
         raise HTTPException(status_code=500, detail="Could not save the upload.")
     finally:
-        file.file.close()
+        await file.close()
 
     log_action(db, user.username, "CREATE", "upload", filename, f"Uploaded file: {file.filename} ({written} bytes)")
     db.commit()
